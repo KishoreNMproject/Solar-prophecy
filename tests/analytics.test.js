@@ -7,7 +7,7 @@ const readings = [
   { id: "3", value: 1028, timestamp: "2026-06-06T08:00:00.000Z" }
 ];
 
-const model = buildSolarModel(readings, { installationDate: "2026-01-01" }, new Date("2026-06-06T12:00:00.000Z"));
+const model = buildSolarModel(readings, { installationDate: "2026" }, new Date("2026-06-06T12:00:00.000Z"));
 
 assert.equal(model.readings.length, 3);
 assert.equal(model.estimatedDailySeries.length, 3);

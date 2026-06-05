@@ -65,7 +65,7 @@ input {
 
 .topbar {
   grid-template-columns: 1fr auto;
-  align-items: end;
+  align-items: center;
   margin-bottom: 20px;
   padding: 18px;
   border: 1px solid rgba(255, 255, 255, 0.76);
@@ -73,6 +73,19 @@ input {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.38));
   box-shadow: var(--shadow), var(--inner-glow);
   backdrop-filter: blur(22px) saturate(145%);
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.topbar-actions button,
+.topbar-actions .file-button {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
 }
 
 .eyebrow {

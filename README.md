@@ -42,8 +42,7 @@ Settings:
 
 ```json
 {
-  "installationDate": "2026-01-01"
-}
+  "installationDate": "2026"}
 ```
 
 Derived daily records are not stored as truth. They are rebuilt from actual readings every time:
@@ -105,7 +104,7 @@ When readings skip calendar days, the interval delta is distributed across the m
 ## UI/UX Structure
 
 - Entry panel: cumulative inverter kWh and editable timestamp
-- Settings panel: optional installation date
+- Settings panel: optional installation year
 - Dashboard cards: today, weekly/monthly averages, best/worst actual day, lifetime, quality, confidence, service-life estimate
 - Charts: daily, monthly, lifetime, trend
 - Readings table: edit/delete only actual user-entered readings

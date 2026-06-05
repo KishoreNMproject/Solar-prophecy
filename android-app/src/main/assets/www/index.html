@@ -11,13 +11,20 @@
   <body>
     <main class="shell">
       <div class="ambient-layer" aria-hidden="true"></div>
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">Self-learning solar analytics</p>
-          <h1>Solar Prophecy</h1>
-        </div>
+    <header class="topbar">
+      <div class="brand">
+        <p class="eyebrow">Self-learning solar analytics</p>
+        <h1>Solar Prophecy</h1>
+      </div>
+      <div class="topbar-actions">
+        <button class="secondary" id="exportData" type="button">Export</button>
+        <label class="secondary file-button">
+          Import
+          <input id="importData" type="file" accept="application/json">
+        </label>
         <div class="status-pill" id="modelStatus">Learning from observations</div>
-      </header>
+      </div>
+    </header>
 
       <section class="entry-panel">
         <form id="readingForm" class="reading-form">
@@ -46,8 +53,8 @@
 
         <form id="settingsForm" class="settings-form">
           <label>
-            <span>Installation date</span>
-            <input id="installationDate" type="date">
+            <span>Installation year</span>
+            <input id="installationDate" type="number" min="1900" max="2100" placeholder="YYYY">
           </label>
           <button class="secondary" type="submit">Save settings</button>
         </form>
@@ -124,19 +131,6 @@
         </article>
       </section>
 
-      <section class="data-panel">
-        <div class="section-heading">
-          <h2>Backup and Portability</h2>
-          <span>offline import, export, restore</span>
-        </div>
-        <div class="data-actions">
-          <button class="secondary" id="exportData" type="button">Export backup</button>
-          <label class="file-button">
-            Import backup
-            <input id="importData" type="file" accept="application/json">
-          </label>
-        </div>
-      </section>
     </main>
 
     <script type="module" src="./src/app.js"></script>

@@ -9,7 +9,11 @@ export function toDateKey(input) {
 }
 
 export function fromDateKey(key) {
-  const [year, month, day] = key.split("-").map(Number);
+  const parts = key.split("-").map(Number);
+  if (parts.length === 1) {
+    return new Date(parts[0], 0, 1);
+  }
+  const [year, month, day] = parts;
   return new Date(year, month - 1, day);
 }
 

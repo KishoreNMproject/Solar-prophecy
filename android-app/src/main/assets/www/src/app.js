@@ -56,10 +56,15 @@ async function init() {
 function bindEvents() {
   els.form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const timestamp = els.useCustomTimestamp.checked ? els.readingTimestamp.value : localDateTimeValue(new Date());
+    const readingValue = els.readingValue.value;
+    const readingId = els.readingId.value || undefined;
+    const timestamp = els.useCustomTimestamp.checked ? els.readingTimestamp.value : new Date().toISOString();
+    
+    console.log("Saving reading:", { readingId, readingValue, timestamp });
+
     await saveReading(db, {
-      id: els.readingId.value || undefined,
-      value: els.readingValue.value,
+      id: readingId,
+      value: readingValue,
       timestamp
     });
     resetForm();
@@ -114,15 +119,20 @@ function bindEvents() {
 }
 
 async function refresh(message = "") {
-  readings = await getReadings(db);
-  settings = await getSettings(db);
-  model = buildSolarModel(readings, settings);
-  renderMetrics();
-  renderReadings();
-  renderForecast();
-  renderCharts();
-  renderQuality();
-  if (message) els.entryMessage.textContent = message;
+  try {
+    readings = await getReadings(db);
+    settings = await getSettings(db);
+    model = buildSolarModel(readings, settings);
+    renderMetrics();
+    renderReadings();
+    renderForecast();
+    renderCharts();
+    renderQuality();
+    if (message) els.entryMessage.textContent = message;
+  } catch (err) {
+    console.error("Refresh failed:", err);
+    els.entryMessage.textContent = "Error: " + err.message;
+  }
 }
 
 function renderMetrics() {
@@ -137,7 +147,7 @@ function renderMetrics() {
     ["Data completeness", `${d.dataCompletenessScore}%`],
     ["Forecast confidence", `${d.forecastConfidence}%`],
     ["System age", d.systemAgeDays == null ? "Unknown" : `${Math.floor(d.systemAgeDays / 365)}y ${d.systemAgeDays % 365}d`],
-    ["Remaining generation", d.remainingExpectedGeneration == null ? "Needs install date" : kwh(d.remainingExpectedGeneration)]
+    ["Remaining generation", d.remainingExpectedGeneration == null ? "Needs install year" : kwh(d.remainingExpectedGeneration)]
   ];
 
   els.metricsGrid.innerHTML = cards

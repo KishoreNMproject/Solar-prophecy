@@ -26,13 +26,30 @@ export async function getReadings(db) {
 }
 
 export async function saveReading(db, reading) {
+  const id = reading.id || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
+  
+  // Ensure we handle potential invalid date strings from the UI
+  let date;
+  if (!reading.timestamp) {
+    date = new Date();
+  } else {
+    date = new Date(reading.timestamp);
+    // If the date is invalid (e.g. from a partial string), fallback to now
+    if (isNaN(date.getTime())) {
+      date = new Date();
+    }
+  }
+
   const record = {
-    id: reading.id || crypto.randomUUID(),
-    value: Number(reading.value),
-    timestamp: new Date(reading.timestamp).toISOString(),
+    id,
+    value: Number(reading.value) || 0,
+    timestamp: date.toISOString(),
     updatedAt: new Date().toISOString()
   };
-  await txRequest(db.transaction(READING_STORE, "readwrite").objectStore(READING_STORE).put(record));
+  
+  const tx = db.transaction(READING_STORE, "readwrite");
+  const store = tx.objectStore(READING_STORE);
+  await txRequest(store.put(record));
   return record;
 }
 
