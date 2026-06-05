@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#10231f">
+    <title>Solar Prophecy</title>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <div class="ambient-layer" aria-hidden="true"></div>
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Self-learning solar analytics</p>
+          <h1>Solar Prophecy</h1>
+        </div>
+        <div class="status-pill" id="modelStatus">Learning from observations</div>
+      </header>
+
+      <section class="entry-panel">
+        <form id="readingForm" class="reading-form">
+          <input type="hidden" id="readingId">
+          <label>
+            <span>Cumulative inverter reading</span>
+            <input id="readingValue" type="number" min="0" step="0.001" inputmode="decimal" required placeholder="kWh">
+          </label>
+          <div class="time-mode">
+            <label class="checkbox-row">
+              <input id="useCustomTimestamp" type="checkbox">
+              <span>Custom date and time</span>
+            </label>
+            <p id="autoTimestampLabel">Using current system date and time when saved.</p>
+          </div>
+          <label id="timestampField" hidden>
+            <span>Reading date and time</span>
+            <input id="readingTimestamp" type="datetime-local" required>
+          </label>
+          <div class="form-actions">
+            <button class="primary" type="submit">Save reading</button>
+            <button class="secondary" type="button" id="cancelEdit" hidden>Cancel edit</button>
+          </div>
+          <p class="form-note" id="entryMessage">Enter only the inverter total. The model learns the rest.</p>
+        </form>
+
+        <form id="settingsForm" class="settings-form">
+          <label>
+            <span>Installation date</span>
+            <input id="installationDate" type="date">
+          </label>
+          <button class="secondary" type="submit">Save settings</button>
+        </form>
+      </section>
+
+      <section id="qualityWarning" class="warning" hidden></section>
+
+      <section class="metrics-grid" id="metricsGrid"></section>
+
+      <section class="charts-grid">
+        <article class="chart-panel">
+          <div class="section-heading">
+            <h2>Daily Generation</h2>
+            <span>actual, estimated, forecast</span>
+          </div>
+          <canvas id="dailyChart" height="260"></canvas>
+        </article>
+        <article class="chart-panel">
+          <div class="section-heading">
+            <h2>Monthly Generation</h2>
+            <span>observed model</span>
+          </div>
+          <canvas id="monthlyChart" height="260"></canvas>
+        </article>
+        <article class="chart-panel">
+          <div class="section-heading">
+            <h2>Lifetime Generation</h2>
+            <span>cumulative production</span>
+          </div>
+          <canvas id="lifetimeChart" height="260"></canvas>
+        </article>
+        <article class="chart-panel">
+          <div class="section-heading">
+            <h2>Forecast Chart</h2>
+            <span>next seven modeled days</span>
+          </div>
+          <canvas id="forecastChart" height="260"></canvas>
+        </article>
+        <article class="chart-panel">
+          <div class="section-heading">
+            <h2>Trend Analysis</h2>
+            <span>rolling behavior</span>
+          </div>
+          <canvas id="trendChart" height="260"></canvas>
+        </article>
+      </section>
+
+      <section class="split">
+        <article class="table-panel">
+          <div class="section-heading">
+            <h2>Readings</h2>
+            <span id="readingCount">0 actual readings</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Reading</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="readingsTable"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="table-panel">
+          <div class="section-heading">
+            <h2>Forecast</h2>
+            <span id="forecastConfidence">0% confidence</span>
+          </div>
+          <div id="forecastList" class="forecast-list"></div>
+        </article>
+      </section>
+
+      <section class="data-panel">
+        <div class="section-heading">
+          <h2>Backup and Portability</h2>
+          <span>offline import, export, restore</span>
+        </div>
+        <div class="data-actions">
+          <button class="secondary" id="exportData" type="button">Export backup</button>
+          <label class="file-button">
+            Import backup
+            <input id="importData" type="file" accept="application/json">
+          </label>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
