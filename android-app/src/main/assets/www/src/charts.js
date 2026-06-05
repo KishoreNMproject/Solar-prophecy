@@ -13,18 +13,20 @@ export function renderBarChart(canvas, points, options = {}) {
   drawAxes(ctx, box);
   if (!points.length) return drawEmpty(ctx, canvas, "Add readings to build this chart");
 
-  const max = Math.max(...points.map((point) => point.value), 1);
-  const barWidth = Math.max(3, box.width / points.length - 3);
+  const rawMax = Math.max(...points.map((point) => point.value), 0);
+  const max = rawMax > 0 ? rawMax : 1;
+  const barWidth = Math.max(2, (box.width / points.length) - 2);
+  
   points.forEach((point, index) => {
-    const height = (point.value / max) * box.height;
+    const height = Math.max(2, (point.value / max) * box.height);
     const x = box.left + index * (box.width / points.length);
     const y = box.bottom - height;
     ctx.fillStyle = COLORS[point.kind] || COLORS.actual;
     ctx.globalAlpha = point.kind === "estimated" ? 0.65 : 0.9;
-    ctx.fillRect(x, y, barWidth, height);
+    ctx.fillRect(x, y, Math.min(barWidth, box.width / points.length), height);
   });
   ctx.globalAlpha = 1;
-  drawTitle(ctx, options.label || `${max.toFixed(1)} kWh max`, box);
+  drawTitle(ctx, options.label || `${rawMax.toFixed(1)} kWh max`, box);
   drawLegend(ctx, canvas, ["actual", "estimated", "forecast"]);
 }
 
@@ -32,56 +34,75 @@ export function renderLineChart(canvas, points, options = {}) {
   const ctx = setup(canvas);
   const box = chartBox(canvas);
   drawAxes(ctx, box);
-  if (!points.length) return drawEmpty(ctx, canvas, "Not enough data yet");
+  if (points.length < 1) return drawEmpty(ctx, canvas, "Not enough data yet");
 
-  const max = Math.max(...points.map((point) => point.value), 1);
-  const min = Math.min(...points.map((point) => point.value), 0);
+  const rawMax = Math.max(...points.map((point) => point.value), 0);
+  const rawMin = Math.min(...points.map((point) => point.value), 0);
+  const max = rawMax > 0 ? rawMax : 1;
+  const min = Math.min(rawMin, max * 0.9);
   const span = max - min || 1;
+
   const locate = (point, index) => ({
-    x: box.left + (points.length === 1 ? 0 : (index / (points.length - 1)) * box.width),
+    x: box.left + (points.length <= 1 ? box.width / 2 : (index / (points.length - 1)) * box.width),
     y: box.bottom - ((point.value - min) / span) * box.height
   });
 
   ctx.lineWidth = 2.5;
-  points.forEach((point, index) => {
-    if (index === 0) return;
-    const prev = locate(points[index - 1], index - 1);
-    const next = locate(point, index);
-    ctx.strokeStyle = COLORS[point.kind] || options.color || COLORS.actual;
-    ctx.setLineDash(point.kind === "forecast" ? [7, 5] : point.kind === "estimated" ? [3, 4] : []);
-    ctx.beginPath();
-    ctx.moveTo(prev.x, prev.y);
-    ctx.lineTo(next.x, next.y);
-    ctx.stroke();
-  });
+  if (points.length > 1) {
+    points.forEach((point, index) => {
+      if (index === 0) return;
+      const prev = locate(points[index - 1], index - 1);
+      const next = locate(point, index);
+      ctx.strokeStyle = COLORS[point.kind] || options.color || COLORS.actual;
+      ctx.setLineDash(point.kind === "forecast" ? [7, 5] : point.kind === "estimated" ? [3, 4] : []);
+      ctx.beginPath();
+      ctx.moveTo(prev.x, prev.y);
+      ctx.lineTo(next.x, next.y);
+      ctx.stroke();
+    });
+  }
+
   ctx.setLineDash([]);
   points.forEach((point, index) => {
     const pos = locate(point, index);
     ctx.fillStyle = COLORS[point.kind] || options.color || COLORS.actual;
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+    ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
     ctx.fill();
+    if (points.length < 10) {
+      ctx.fillStyle = COLORS.text;
+      ctx.fillText(point.value.toFixed(1), pos.x - 10, pos.y - 10);
+    }
   });
-  drawTitle(ctx, options.label || `${max.toFixed(1)} kWh peak`, box);
+  
+  drawTitle(ctx, options.label || `${rawMax.toFixed(1)} peak`, box);
   if (options.legend !== false) drawLegend(ctx, canvas, ["actual", "estimated", "forecast"]);
 }
 
 function setup(canvas) {
   const ratio = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = Math.max(320, rect.width) * ratio;
-  canvas.height = Number(canvas.getAttribute("height")) * ratio;
+  const width = canvas.clientWidth || 320;
+  const height = canvas.clientHeight || 260;
+  canvas.width = width * ratio;
+  canvas.height = height * ratio;
   const ctx = canvas.getContext("2d");
   ctx.scale(ratio, ratio);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.font = "12px Inter, system-ui, sans-serif";
+  ctx.clearRect(0, 0, width, height);
+  ctx.font = "12px Inter, ui-sans-serif, system-ui, sans-serif";
   return ctx;
 }
 
 function chartBox(canvas) {
-  const width = canvas.getBoundingClientRect().width || 320;
-  const height = Number(canvas.getAttribute("height"));
-  return { left: 38, top: 18, right: width - 14, bottom: height - 34, width: width - 52, height: height - 52 };
+  const width = canvas.clientWidth || 320;
+  const height = canvas.clientHeight || 260;
+  return { 
+    left: 44, 
+    top: 30, 
+    right: width - 18, 
+    bottom: height - 44, 
+    width: width - 62, 
+    height: height - 74 
+  };
 }
 
 function drawAxes(ctx, box) {

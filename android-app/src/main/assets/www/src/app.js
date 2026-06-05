@@ -143,6 +143,7 @@ function renderMetrics() {
     ["Monthly average", kwh(d.monthlyAverage)],
     ["Best day", d.bestProductionDay ? `${kwh(d.bestProductionDay.generation)} · ${d.bestProductionDay.date}` : "Learning"],
     ["Worst day", d.worstProductionDay ? `${kwh(d.worstProductionDay.generation)} · ${d.worstProductionDay.date}` : "Learning"],
+    ["Observations", `${model.dataQuality.actualReadingCount} entries`],
     ["Lifetime production", kwh(d.lifetimeProduction)],
     ["Data completeness", `${d.dataCompletenessScore}%`],
     ["Forecast confidence", `${d.forecastConfidence}%`],
@@ -164,11 +165,11 @@ function renderReadings() {
     .map(
       (reading) => `
       <tr>
-        <td>${formatDateTime(reading.timestamp)}</td>
-        <td>${kwh(reading.value)}</td>
+        <td style="font-size:0.9rem; font-weight:500;">${formatDateTime(reading.timestamp)}</td>
+        <td style="font-weight:700;">${kwh(reading.value)}</td>
         <td class="row-actions">
-          <button type="button" data-edit="${reading.id}">Edit</button>
-          <button type="button" data-delete="${reading.id}">Delete</button>
+          <button type="button" class="secondary" data-edit="${reading.id}">Edit</button>
+          <button type="button" class="secondary" data-delete="${reading.id}" style="color:var(--danger);">Delete</button>
         </td>
       </tr>`
     )
@@ -196,17 +197,27 @@ function renderReadings() {
 
 function renderForecast() {
   const f = model.forecasts;
+  const q = model.dataQuality;
   els.forecastConfidence.textContent = `${f.confidence}% confidence`;
+  
   const rows = [
     ["Tomorrow", f.tomorrow ? kwh(f.tomorrow.generation) : "Needs data", f.tomorrow ? pct(f.tomorrow.confidence) : "0%"],
-    ["7-day total", kwh(sum(f.sevenDay.map((day) => day.generation))), f.confidence + "%"],
-    ["Monthly", kwh(f.monthly.generation), f.monthly.confidence + "%"],
-    ["Bi-monthly", kwh(f.biMonthly.generation), f.biMonthly.confidence + "%"],
-    ["Annual", kwh(f.annual.generation), f.annual.confidence + "%"]
+    ["7-day total", kwh(sum(f.sevenDay.map((day) => day.generation))), f.confidence + "%"]
   ];
+
+  if (q.actualReadingCount >= 4) {
+    rows.push(["Monthly", kwh(f.monthly.generation), f.monthly.confidence + "%"]);
+    rows.push(["Bi-monthly", kwh(f.biMonthly.generation), f.biMonthly.confidence + "%"]);
+    rows.push(["Annual", kwh(f.annual.generation), f.annual.confidence + "%"]);
+  }
+
   els.forecastList.innerHTML = rows
     .map(([label, value, confidence]) => `<div><span>${label}</span><strong>${value}</strong><em>${confidence}</em></div>`)
     .join("");
+    
+  if (q.actualReadingCount < 4) {
+    els.forecastList.innerHTML += `<p style="font-size:0.8rem; color:var(--muted); margin-top:10px; padding-top:10px; border-top:1px solid var(--line);">Advanced forecasts hidden until 4 readings are collected.</p>`;
+  }
 }
 
 function renderCharts() {
