@@ -85,7 +85,7 @@ export async function importBackup(db, backup) {
   const readStore = readTx.objectStore(READING_STORE);
   await txRequest(readStore.clear());
   for (const reading of backup.readings) {
-    await txRequest(db.transaction(READING_STORE, "readwrite").objectStore(READING_STORE).put(reading));
+    await txRequest(readStore.put(reading));
   }
 
   if (backup.settings && typeof backup.settings === "object") {

@@ -65,15 +65,23 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void saveBackup(String json) {
             try {
-                File dir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
-                if (dir == null) dir = getFilesDir();
-                if (!dir.exists()) dir.mkdirs();
+                File baseDir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+                if (baseDir == null) baseDir = getFilesDir();
+                
+                File solarDir = new File(baseDir, "Solar");
+                if (!solarDir.exists()) solarDir.mkdirs();
+                
                 String name = "solar-prophecy-backup-" + System.currentTimeMillis() + ".json";
-                File output = new File(dir, name);
+                File output = new File(solarDir, name);
+                
                 try (FileOutputStream stream = new FileOutputStream(output)) {
                     stream.write(json.getBytes(StandardCharsets.UTF_8));
                 }
-                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Backup saved: " + output.getAbsolutePath(), Toast.LENGTH_LONG).show());
+                
+                runOnUiThread(() -> {
+                    String msg = "Backup saved to Documents/Solar: " + output.getName();
+                    Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show();
+                });
             } catch (Exception ex) {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "Backup failed: " + ex.getMessage(), Toast.LENGTH_LONG).show());
             }

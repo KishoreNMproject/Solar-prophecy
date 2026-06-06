@@ -13,18 +13,41 @@
       <div class="ambient-layer" aria-hidden="true"></div>
     <header class="topbar">
       <div class="brand">
-        <p class="eyebrow">Self-learning solar analytics</p>
-        <h1>Solar Prophecy</h1>
+        <p class="eyebrow">Solar Analytics</p>
+        <h1>Prophecy</h1>
       </div>
       <div class="topbar-actions">
+        <div class="status-pill" id="modelStatus">Initializing...</div>
         <button class="secondary" id="exportData" type="button">Export</button>
         <label class="secondary file-button">
           Import
           <input id="importData" type="file" accept="application/json">
         </label>
-        <div class="status-pill" id="modelStatus">Learning from observations</div>
       </div>
     </header>
+
+      <section class="gauge-container">
+        <div class="gauge-wrapper">
+          <svg class="gauge-svg" viewBox="0 0 200 200">
+            <circle class="gauge-track" cx="100" cy="100" r="90"></circle>
+            <circle class="gauge-progress" id="gaugeProgress" cx="100" cy="100" r="90" style="stroke-dashoffset: 565.48;"></circle>
+          </svg>
+          <div class="gauge-content">
+            <span class="gauge-value" id="gaugeValue">0.00</span>
+            <span class="gauge-label">kWh today</span>
+          </div>
+        </div>
+        <div class="gauge-footer">
+          <div class="gauge-stat">
+            <span>Expected</span>
+            <strong id="gaugeExpected">0.00 kWh</strong>
+          </div>
+          <div class="gauge-stat">
+            <span>Progress</span>
+            <strong id="gaugePct">0%</strong>
+          </div>
+        </div>
+      </section>
 
       <section class="entry-panel">
         <form id="readingForm" class="reading-form">

@@ -63,7 +63,7 @@ export function buildSolarModel(readings, settings = {}, now = new Date()) {
   const forecasts = buildForecasts(modelDays, patterns, forecastConfidence, now);
   const aggregates = aggregateSeries(modelDays);
   const dataQuality = buildDataQuality(actualReadings, actualDays, estimatedDays, forecastConfidence);
-  const dashboard = buildDashboard(modelDays, actualReadings, forecasts, dataQuality, settings, now);
+  const dashboard = buildDashboard(modelDays, actualReadings, forecasts, dataQuality, settings, now, patterns);
 
   return {
     readings: actualReadings,
@@ -213,7 +213,7 @@ function buildDataQuality(readings, actualDays, estimatedDays, forecastConfidenc
   };
 }
 
-function buildDashboard(days, readings, forecasts, dataQuality, settings, now) {
+function buildDashboard(days, readings, forecasts, dataQuality, settings, now, patterns) {
   const today = toDateKey(now);
   const todayGeneration = days.find((day) => day.date === today)?.generation || 0;
   const last7 = days.slice(-7);
@@ -228,9 +228,11 @@ function buildDashboard(days, readings, forecasts, dataQuality, settings, now) {
   const expectedServiceYears = 25;
   const remainingDays = ageDays == null ? null : Math.max(0, expectedServiceYears * 365 - ageDays);
   const averageDaily = mean(days.map((day) => day.generation));
+  const expectedToday = predictDay(patterns, now, days.length);
 
   return {
     todayGeneration: round(todayGeneration),
+    expectedTodayGeneration: round(expectedToday),
     weeklyAverage: round(mean(last7.map((day) => day.generation))),
     monthlyAverage: round(mean(last30.map((day) => day.generation))),
     bestProductionDay: best || null,

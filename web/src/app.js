@@ -36,7 +36,11 @@ const els = {
   qualityWarning: document.querySelector("#qualityWarning"),
   modelStatus: document.querySelector("#modelStatus"),
   exportData: document.querySelector("#exportData"),
-  importData: document.querySelector("#importData")
+  importData: document.querySelector("#importData"),
+  gaugeProgress: document.querySelector("#gaugeProgress"),
+  gaugeValue: document.querySelector("#gaugeValue"),
+  gaugeExpected: document.querySelector("#gaugeExpected"),
+  gaugePct: document.querySelector("#gaugePct")
 };
 
 init();
@@ -123,6 +127,7 @@ async function refresh(message = "") {
     readings = await getReadings(db);
     settings = await getSettings(db);
     model = buildSolarModel(readings, settings);
+    renderGauge();
     renderMetrics();
     renderReadings();
     renderForecast();
@@ -135,27 +140,54 @@ async function refresh(message = "") {
   }
 }
 
+function renderGauge() {
+  const d = model.dashboard;
+  const current = d.todayGeneration;
+  const expected = d.expectedTodayGeneration || 0.001;
+  const pct = Math.round((current / expected) * 100);
+  const displayPct = Math.min(100, pct);
+  
+  els.gaugeValue.textContent = current.toFixed(2);
+  els.gaugeExpected.textContent = `${expected.toFixed(2)} kWh`;
+  els.gaugePct.textContent = `${pct}%`;
+  
+  const circumference = 2 * Math.PI * 90;
+  const offset = circumference - (circumference * displayPct) / 100;
+  els.gaugeProgress.style.strokeDashoffset = offset;
+  
+  let color = "var(--amber)";
+  if (model.dataQuality.actualReadingCount < 4) {
+    color = "rgba(255, 255, 255, 0.1)";
+  } else if (pct >= 95) {
+    color = "var(--green)";
+  } else if (pct >= 80) {
+    color = "var(--amber)";
+  } else {
+    color = "var(--rose)";
+  }
+  els.gaugeProgress.style.stroke = color;
+}
+
 function renderMetrics() {
   const d = model.dashboard;
   const cards = [
-    ["Today", kwh(d.todayGeneration)],
     ["Weekly average", kwh(d.weeklyAverage)],
     ["Monthly average", kwh(d.monthlyAverage)],
-    ["Best day", d.bestProductionDay ? `${kwh(d.bestProductionDay.generation)} · ${d.bestProductionDay.date}` : "Learning"],
-    ["Worst day", d.worstProductionDay ? `${kwh(d.worstProductionDay.generation)} · ${d.worstProductionDay.date}` : "Learning"],
+    ["Best day", d.bestProductionDay ? `${kwh(d.bestProductionDay.generation)}` : "Learning"],
     ["Observations", `${model.dataQuality.actualReadingCount} entries`],
     ["Lifetime production", kwh(d.lifetimeProduction)],
-    ["Data completeness", `${d.dataCompletenessScore}%`],
-    ["Forecast confidence", `${d.forecastConfidence}%`],
+    ["Confidence", `${d.forecastConfidence}%`],
     ["System age", d.systemAgeDays == null ? "Unknown" : `${Math.floor(d.systemAgeDays / 365)}y ${d.systemAgeDays % 365}d`],
-    ["Remaining generation", d.remainingExpectedGeneration == null ? "Needs install year" : kwh(d.remainingExpectedGeneration)]
+    ["Remaining", d.remainingExpectedGeneration == null ? "Unknown" : kwh(d.remainingExpectedGeneration)]
   ];
 
   els.metricsGrid.innerHTML = cards
     .map(([label, value]) => `<article class="metric"><span>${label}</span><strong>${value}</strong></article>`)
     .join("");
-  els.modelStatus.textContent =
-    model.dataQuality.forecastReliability === "low" ? "Learning: low confidence" : `Model confidence ${d.forecastConfidence}%`;
+  
+  const status = model.dataQuality.forecastReliability;
+  els.modelStatus.textContent = status === "low" ? "Learning..." : `Model: ${status}`;
+  els.modelStatus.style.color = status === "strong" ? "var(--green)" : status === "developing" ? "var(--amber)" : "var(--muted)";
 }
 
 function renderReadings() {
