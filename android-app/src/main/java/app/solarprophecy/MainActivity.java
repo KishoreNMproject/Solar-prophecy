@@ -2,6 +2,8 @@ package app.solarprophecy;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Environment;
 import android.os.Bundle;
 import android.webkit.JavascriptInterface;
@@ -14,13 +16,14 @@ import android.widget.Toast;
 
 import androidx.webkit.WebViewAssetLoader;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
+    private static final int CREATE_FILE_REQUEST_CODE = 1;
     private WebView webView;
     private WebViewAssetLoader assetLoader;
+    private String pendingBackupJson;
 
     @Override
     @SuppressLint("SetJavaScriptEnabled")
@@ -52,6 +55,29 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == CREATE_FILE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+            Uri uri = data.getData();
+            if (uri != null && pendingBackupJson != null) {
+                saveToUri(uri, pendingBackupJson);
+                pendingBackupJson = null;
+            }
+        }
+    }
+
+    private void saveToUri(Uri uri, String json) {
+        try (OutputStream outputStream = getContentResolver().openOutputStream(uri)) {
+            if (outputStream != null) {
+                outputStream.write(json.getBytes(StandardCharsets.UTF_8));
+                Toast.makeText(this, "Backup saved successfully", Toast.LENGTH_LONG).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Failed to save backup: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
     @SuppressWarnings("deprecation")
     public void onBackPressed() {
         if (webView != null && webView.canGoBack()) {
@@ -64,27 +90,15 @@ public class MainActivity extends Activity {
     public class BackupBridge {
         @JavascriptInterface
         public void saveBackup(String json) {
-            try {
-                File baseDir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
-                if (baseDir == null) baseDir = getFilesDir();
-                
-                File solarDir = new File(baseDir, "Solar");
-                if (!solarDir.exists()) solarDir.mkdirs();
-                
-                String name = "solar-prophecy-backup-" + System.currentTimeMillis() + ".json";
-                File output = new File(solarDir, name);
-                
-                try (FileOutputStream stream = new FileOutputStream(output)) {
-                    stream.write(json.getBytes(StandardCharsets.UTF_8));
-                }
-                
-                runOnUiThread(() -> {
-                    String msg = "Backup saved to Documents/Solar: " + output.getName();
-                    Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show();
-                });
-            } catch (Exception ex) {
-                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Backup failed: " + ex.getMessage(), Toast.LENGTH_LONG).show());
-            }
+            pendingBackupJson = json;
+            String fileName = "solar-prophecy-backup-" + System.currentTimeMillis() + ".json";
+            
+            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("application/json");
+            intent.putExtra(Intent.EXTRA_TITLE, fileName);
+            
+            startActivityForResult(intent, CREATE_FILE_REQUEST_CODE);
         }
     }
 }

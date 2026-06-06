@@ -52,21 +52,45 @@ export function normalizeReadings(readings) {
     .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 }
 
+export function getDailyClosingRecords(readings) {
+  const normalized = normalizeReadings(readings);
+  const byDate = new Map();
+  
+  for (const reading of normalized) {
+    const date = toDateKey(reading.timestamp);
+    // Always take the latest reading for the day
+    byDate.set(date, reading);
+  }
+  
+  return [...byDate.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, reading]) => ({
+      date,
+      value: reading.value,
+      readingId: reading.id,
+      timestamp: reading.timestamp
+    }));
+}
+
 export function buildSolarModel(readings, settings = {}, now = new Date()) {
   const actualReadings = normalizeReadings(readings);
-  const dailySeries = buildDailySeries(actualReadings);
+  const dailyClosingRecords = getDailyClosingRecords(readings);
+  const dailySeries = buildDailySeries(dailyClosingRecords);
+  
   const modelDays = dailySeries.filter((day) => day.generation > 0 || day.kind !== "empty");
   const actualDays = dailySeries.filter((day) => day.kind === "actual");
   const estimatedDays = dailySeries.filter((day) => day.kind === "estimated");
+  
   const forecastConfidence = computeConfidence(actualDays, estimatedDays);
   const patterns = learnPatterns(modelDays);
-  const forecasts = buildForecasts(modelDays, patterns, forecastConfidence, now);
+  const forecasts = buildForecasts(actualDays, patterns, forecastConfidence, now);
   const aggregates = aggregateSeries(modelDays);
-  const dataQuality = buildDataQuality(actualReadings, actualDays, estimatedDays, forecastConfidence);
+  const dataQuality = buildDataQuality(actualReadings, dailyClosingRecords, actualDays, estimatedDays, forecastConfidence);
   const dashboard = buildDashboard(modelDays, actualReadings, forecasts, dataQuality, settings, now, patterns);
 
   return {
     readings: actualReadings,
+    dailyClosingRecords,
     dailySeries: [...modelDays, ...forecasts.sevenDay].sort((a, b) => a.date.localeCompare(b.date)),
     actualDailySeries: actualDays,
     estimatedDailySeries: estimatedDays,
@@ -79,15 +103,15 @@ export function buildSolarModel(readings, settings = {}, now = new Date()) {
   };
 }
 
-function buildDailySeries(readings) {
-  if (readings.length < 2) return [];
+function buildDailySeries(closingRecords) {
+  if (closingRecords.length < 2) return [];
   const days = [];
 
-  for (let i = 1; i < readings.length; i += 1) {
-    const previous = readings[i - 1];
-    const current = readings[i];
-    const startKey = toDateKey(previous.timestamp);
-    const endKey = toDateKey(current.timestamp);
+  for (let i = 1; i < closingRecords.length; i += 1) {
+    const previous = closingRecords[i - 1];
+    const current = closingRecords[i];
+    const startKey = previous.date;
+    const endKey = current.date;
     const span = daysBetween(startKey, endKey);
     const delta = current.value - previous.value;
 
@@ -100,25 +124,19 @@ function buildDailySeries(readings) {
         date,
         generation: round(perDay),
         kind: offset === span ? "actual" : "estimated",
-        source: offset === span ? "measured interval endpoint" : "gap interpolation",
+        source: offset === span ? "daily closing record" : "gap interpolation",
         confidence: offset === span ? 1 : 0.45
       });
     }
   }
 
-  return dedupeDays(days);
-}
-
-function dedupeDays(days) {
-  const byDate = new Map();
-  for (const day of days) {
-    const existing = byDate.get(day.date);
-    if (!existing || existing.kind === "estimated" || day.kind === "actual") byDate.set(day.date, day);
-  }
-  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+  return days;
 }
 
 function learnPatterns(days) {
+  if (days.length < 7) {
+    return { averageDaily: 0, variability: 0, weekday: new Map(), monthly: new Map(), trend: { slope: 0, intercept: 0 } };
+  }
   const actualish = days.filter((day) => day.generation >= 0);
   const avg = mean(actualish.map((day) => day.generation));
   const variability = stddev(actualish.map((day) => day.generation));
@@ -128,13 +146,27 @@ function learnPatterns(days) {
   return { averageDaily: avg, variability, weekday, monthly, trend };
 }
 
-function buildForecasts(days, patterns, baseConfidence, now) {
-  const lastDate = days.length ? days[days.length - 1].date : toDateKey(now);
+function buildForecasts(actualDays, patterns, baseConfidence, now) {
+  const dayCount = actualDays.length;
+  const lastDate = actualDays.length ? actualDays[actualDays.length - 1].date : toDateKey(now);
+  
+  if (dayCount < 7) {
+    return { 
+      tomorrow: null, 
+      sevenDay: [], 
+      monthly: { days: 30, generation: 0, confidence: 0 }, 
+      biMonthly: { days: 60, generation: 0, confidence: 0 }, 
+      annual: { days: 365, generation: 0, confidence: 0 }, 
+      confidence: 0,
+      state: "learning"
+    };
+  }
+
   const sevenDay = [];
   for (let i = 1; i <= 7; i += 1) {
     const date = addDays(lastDate, i);
     const d = fromDateKey(date);
-    const predicted = predictDay(patterns, d, days.length + i);
+    const predicted = predictDay(patterns, d, actualDays.length + i);
     sevenDay.push({
       date,
       generation: round(predicted),
@@ -144,12 +176,13 @@ function buildForecasts(days, patterns, baseConfidence, now) {
     });
   }
 
+  const state = dayCount < 30 ? "limited" : "normal";
   const tomorrow = sevenDay[0] || null;
-  const monthly = forecastPeriod(days, patterns, baseConfidence, 30);
-  const biMonthly = forecastPeriod(days, patterns, baseConfidence, 60);
-  const annual = forecastPeriod(days, patterns, baseConfidence, 365);
+  const monthly = forecastPeriod(actualDays, patterns, baseConfidence, 30);
+  const biMonthly = forecastPeriod(actualDays, patterns, baseConfidence, 60);
+  const annual = forecastPeriod(actualDays, patterns, baseConfidence, 365);
 
-  return { tomorrow, sevenDay, monthly, biMonthly, annual, confidence: Math.round(baseConfidence * 100) };
+  return { tomorrow, sevenDay, monthly, biMonthly, annual, confidence: Math.round(baseConfidence * 100), state };
 }
 
 function forecastPeriod(days, patterns, confidence, count) {
@@ -163,6 +196,7 @@ function forecastPeriod(days, patterns, confidence, count) {
 }
 
 function predictDay(patterns, date, index) {
+  if (patterns.averageDaily === 0) return 0;
   const baseline = patterns.averageDaily || 0;
   const weekday = patterns.weekday.get(date.getDay()) ?? baseline;
   const month = patterns.monthly.get(date.getMonth() + 1) ?? baseline;
@@ -197,15 +231,23 @@ function aggregateByRolling(days, windowSize) {
   });
 }
 
-function buildDataQuality(readings, actualDays, estimatedDays, forecastConfidence) {
+function buildDataQuality(readings, dailyClosingRecords, actualDays, estimatedDays, forecastConfidence) {
   const missingDayCount = estimatedDays.length;
   const modeledDays = actualDays.length + estimatedDays.length;
   const completeness = modeledDays ? actualDays.length / modeledDays : 0;
-  const reliability = forecastConfidence < 0.35 ? "low" : forecastConfidence < 0.7 ? "developing" : "strong";
+  
+  let reliability = "low";
+  if (actualDays.length >= 30 && forecastConfidence >= 0.7) {
+    reliability = "strong";
+  } else if (actualDays.length >= 7 && forecastConfidence >= 0.35) {
+    reliability = "developing";
+  }
+
   return {
-    actualReadingCount: readings.length,
+    rawObservationCount: readings.length,
+    dailyClosingRecordCount: dailyClosingRecords.length,
     actualDayCount: actualDays.length,
-    estimatedReadingCount: estimatedDays.length,
+    estimatedDayCount: estimatedDays.length,
     missingDayCount,
     completenessScore: Math.round(completeness * 100),
     forecastReliability: reliability,
@@ -225,10 +267,9 @@ function buildDashboard(days, readings, forecasts, dataQuality, settings, now, p
   const firstReading = readings[0] ? new Date(readings[0].timestamp) : null;
   const ageStart = install || firstReading;
   const ageDays = ageStart ? Math.max(0, Math.floor((now - ageStart) / DAY_MS)) : null;
-  const expectedServiceYears = 25;
-  const remainingDays = ageDays == null ? null : Math.max(0, expectedServiceYears * 365 - ageDays);
-  const averageDaily = mean(days.map((day) => day.generation));
-  const expectedToday = predictDay(patterns, now, days.length);
+  
+  const averageDaily = actualDays.length >= 7 ? mean(actualDays.map((day) => day.generation)) : 0;
+  const expectedToday = forecasts.state !== "learning" ? predictDay(patterns, now, actualDays.length) : 0;
 
   return {
     todayGeneration: round(todayGeneration),
@@ -246,15 +287,17 @@ function buildDashboard(days, readings, forecasts, dataQuality, settings, now, p
     annualForecast: forecasts.annual,
     systemAgeDays: ageDays,
     observedLifetimeGeneration: readings.length ? round(readings[readings.length - 1].value - readings[0].value) : 0,
-    remainingExpectedServiceLifeDays: remainingDays,
-    remainingExpectedGeneration: remainingDays == null ? null : round(remainingDays * averageDaily)
+    forecastState: forecasts.state
   };
 }
 
 function computeConfidence(actualDays, estimatedDays) {
   const countScore = Math.min(1, actualDays.length / 90);
-  const spanScore = actualDays.length ? Math.min(1, daysBetween(actualDays[0].date, actualDays[actualDays.length - 1].date) / 365) : 0;
+  const spanScore = actualDays.length > 1 ? Math.min(1, daysBetween(actualDays[0].date, actualDays[actualDays.length - 1].date) / 365) : 0;
   const completeness = actualDays.length + estimatedDays.length ? actualDays.length / (actualDays.length + estimatedDays.length) : 0;
+  
+  if (actualDays.length < 7) return 0;
+  
   const confidence = countScore * 0.45 + spanScore * 0.35 + completeness * 0.2;
   return Math.max(0, Math.min(0.95, confidence));
 }

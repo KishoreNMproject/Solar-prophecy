@@ -35,6 +35,8 @@ const els = {
   forecastConfidence: document.querySelector("#forecastConfidence"),
   qualityWarning: document.querySelector("#qualityWarning"),
   modelStatus: document.querySelector("#modelStatus"),
+  modelStatusStats: document.querySelector("#modelStatusStats"),
+  forecastStateText: document.querySelector("#forecastStateText"),
   exportData: document.querySelector("#exportData"),
   importData: document.querySelector("#importData"),
   gaugeProgress: document.querySelector("#gaugeProgress"),
@@ -128,6 +130,7 @@ async function refresh(message = "") {
     settings = await getSettings(db);
     model = buildSolarModel(readings, settings);
     renderGauge();
+    renderModelStatus();
     renderMetrics();
     renderReadings();
     renderForecast();
@@ -142,25 +145,33 @@ async function refresh(message = "") {
 
 function renderGauge() {
   const d = model.dashboard;
+  const q = model.dataQuality;
   const current = d.todayGeneration;
   const expected = d.expectedTodayGeneration || 0.001;
-  const pct = Math.round((current / expected) * 100);
-  const displayPct = Math.min(100, pct);
+  const pctValue = Math.round((current / expected) * 100);
+  const displayPct = Math.min(100, pctValue);
   
   els.gaugeValue.textContent = current.toFixed(2);
+  
+  if (q.actualDayCount < 30) {
+    els.gaugeExpected.textContent = "Learning Phase";
+    els.gaugePct.textContent = `${q.actualDayCount}/30 days`;
+    els.gaugeProgress.style.strokeDashoffset = 565.48;
+    els.gaugeProgress.style.stroke = "rgba(255, 255, 255, 0.1)";
+    return;
+  }
+
   els.gaugeExpected.textContent = `${expected.toFixed(2)} kWh`;
-  els.gaugePct.textContent = `${pct}%`;
+  els.gaugePct.textContent = `${pctValue}%`;
   
   const circumference = 2 * Math.PI * 90;
   const offset = circumference - (circumference * displayPct) / 100;
   els.gaugeProgress.style.strokeDashoffset = offset;
   
   let color = "var(--amber)";
-  if (model.dataQuality.actualReadingCount < 4) {
-    color = "rgba(255, 255, 255, 0.1)";
-  } else if (pct >= 95) {
+  if (pctValue >= 95) {
     color = "var(--green)";
-  } else if (pct >= 80) {
+  } else if (pctValue >= 80) {
     color = "var(--amber)";
   } else {
     color = "var(--rose)";
@@ -168,26 +179,51 @@ function renderGauge() {
   els.gaugeProgress.style.stroke = color;
 }
 
+function renderModelStatus() {
+  const q = model.dataQuality;
+  const state = model.dashboard.forecastState;
+  
+  els.forecastStateText.textContent = state.charAt(0).toUpperCase() + state.slice(1);
+  
+  const stats = [
+    ["Raw Observations", q.rawObservationCount],
+    ["Daily Records", q.dailyClosingRecordCount],
+    ["Intraday", q.rawObservationCount - q.dailyClosingRecordCount],
+    ["Missing Days", q.missingDayCount],
+    ["Estimated Days", q.estimatedDayCount]
+  ];
+
+  els.modelStatusStats.innerHTML = stats
+    .map(([label, value]) => `
+      <div class="status-stat">
+        <span>${label}</span>
+        <strong>${value}</strong>
+      </div>`)
+    .join("");
+
+  const status = q.forecastReliability;
+  els.modelStatus.textContent = status === "low" ? "Learning..." : `Model: ${status}`;
+  els.modelStatus.style.color = status === "strong" ? "var(--green)" : status === "developing" ? "var(--amber)" : "var(--muted)";
+}
+
 function renderMetrics() {
   const d = model.dashboard;
+  const q = model.dataQuality;
+  
   const cards = [
-    ["Weekly average", kwh(d.weeklyAverage)],
-    ["Monthly average", kwh(d.monthlyAverage)],
+    ["Weekly average", q.actualDayCount >= 7 ? kwh(d.weeklyAverage) : "Learning"],
+    ["Monthly average", q.actualDayCount >= 30 ? kwh(d.monthlyAverage) : "Learning"],
     ["Best day", d.bestProductionDay ? `${kwh(d.bestProductionDay.generation)}` : "Learning"],
-    ["Observations", `${model.dataQuality.actualReadingCount} entries`],
+    ["Daily Records", `${q.dailyClosingRecordCount} days`],
     ["Lifetime production", kwh(d.lifetimeProduction)],
-    ["Confidence", `${d.forecastConfidence}%`],
+    ["Confidence", q.actualDayCount >= 7 ? `${d.forecastConfidence}%` : "0%"],
     ["System age", d.systemAgeDays == null ? "Unknown" : `${Math.floor(d.systemAgeDays / 365)}y ${d.systemAgeDays % 365}d`],
-    ["Remaining", d.remainingExpectedGeneration == null ? "Unknown" : kwh(d.remainingExpectedGeneration)]
+    ["Annual Estimate", q.actualDayCount >= 30 ? kwh(d.annualForecast.generation) : "Learning"]
   ];
 
   els.metricsGrid.innerHTML = cards
     .map(([label, value]) => `<article class="metric"><span>${label}</span><strong>${value}</strong></article>`)
     .join("");
-  
-  const status = model.dataQuality.forecastReliability;
-  els.modelStatus.textContent = status === "low" ? "Learning..." : `Model: ${status}`;
-  els.modelStatus.style.color = status === "strong" ? "var(--green)" : status === "developing" ? "var(--amber)" : "var(--muted)";
 }
 
 function renderReadings() {
@@ -230,14 +266,21 @@ function renderReadings() {
 function renderForecast() {
   const f = model.forecasts;
   const q = model.dataQuality;
+  
+  if (q.actualDayCount < 7) {
+    els.forecastConfidence.textContent = "0% confidence";
+    els.forecastList.innerHTML = `<p style="font-size:0.8rem; color:var(--muted); padding: 10px;">Learning - insufficient historical data. Need 7 days of closing records for initial forecasting.</p>`;
+    return;
+  }
+
   els.forecastConfidence.textContent = `${f.confidence}% confidence`;
   
   const rows = [
-    ["Tomorrow", f.tomorrow ? kwh(f.tomorrow.generation) : "Needs data", f.tomorrow ? pct(f.tomorrow.confidence) : "0%"],
+    ["Tomorrow", kwh(f.tomorrow.generation), pct(f.tomorrow.confidence)],
     ["7-day total", kwh(sum(f.sevenDay.map((day) => day.generation))), f.confidence + "%"]
   ];
 
-  if (q.actualReadingCount >= 4) {
+  if (q.actualDayCount >= 30) {
     rows.push(["Monthly", kwh(f.monthly.generation), f.monthly.confidence + "%"]);
     rows.push(["Bi-monthly", kwh(f.biMonthly.generation), f.biMonthly.confidence + "%"]);
     rows.push(["Annual", kwh(f.annual.generation), f.annual.confidence + "%"]);
@@ -247,15 +290,16 @@ function renderForecast() {
     .map(([label, value, confidence]) => `<div><span>${label}</span><strong>${value}</strong><em>${confidence}</em></div>`)
     .join("");
     
-  if (q.actualReadingCount < 4) {
-    els.forecastList.innerHTML += `<p style="font-size:0.8rem; color:var(--muted); margin-top:10px; padding-top:10px; border-top:1px solid var(--line);">Advanced forecasts hidden until 4 readings are collected.</p>`;
+  if (q.actualDayCount < 30) {
+    els.forecastList.innerHTML += `<p style="font-size:0.8rem; color:var(--muted); margin-top:10px; padding-top:10px; border-top:1px solid var(--line);">Advanced forecasts hidden until 30 daily records are collected.</p>`;
   }
 }
 
 function renderCharts() {
+  const q = model.dataQuality;
   const daily = model.dailySeries.slice(-45).map((day) => ({ value: day.generation, kind: day.kind }));
   const monthly = monthlyChartPoints();
-  const lifetime = running(model.actualDailySeries.concat(model.estimatedDailySeries).sort((a, b) => a.date.localeCompare(b.date)))
+  const lifetime = running(model.dailySeries.filter(d => d.kind !== "forecast").sort((a, b) => a.date.localeCompare(b.date)))
     .slice(-120)
     .map((point) => ({ value: point.value, kind: point.kind }));
   const forecast = model.forecastSeries.map((day) => ({ value: day.generation, kind: "forecast" }));
@@ -266,16 +310,27 @@ function renderCharts() {
   renderBarChart(document.querySelector("#dailyChart"), daily);
   renderBarChart(document.querySelector("#monthlyChart"), monthly, { label: "monthly kWh" });
   renderLineChart(document.querySelector("#lifetimeChart"), lifetime, { label: "cumulative kWh" });
-  renderBarChart(document.querySelector("#forecastChart"), forecast, { label: "forecast kWh" });
+  
+  if (q.actualDayCount >= 7) {
+    renderBarChart(document.querySelector("#forecastChart"), forecast, { label: "forecast kWh" });
+  } else {
+    // Clear forecast chart if insufficient data
+    const canvas = document.querySelector("#forecastChart");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  
   renderLineChart(document.querySelector("#trendChart"), trend, { label: "14-day rolling average" });
 }
 
 function renderQuality() {
   const q = model.dataQuality;
   const warnings = [];
-  if (q.actualReadingCount < 4) warnings.push("Forecasting is limited until at least four readings are available.");
-  if (q.missingDayCount > 0) warnings.push(`${q.missingDayCount} missing days are estimated internally and never treated as actual readings.`);
-  if (q.forecastReliability === "low") warnings.push("Confidence is intentionally low because the model has limited history.");
+  if (q.actualDayCount < 7) warnings.push("Learning phase: initial forecasting requires at least 7 days of closing records.");
+  else if (q.actualDayCount < 30) warnings.push("Limited forecasting: model is still learning long-term patterns.");
+  
+  if (q.missingDayCount > 0) warnings.push(`${q.missingDayCount} missing days are estimated and never treated as actual records.`);
+  if (q.forecastReliability === "low" && q.actualDayCount >= 7) warnings.push("Confidence is low due to limited or highly variable data.");
 
   els.qualityWarning.hidden = warnings.length === 0;
   els.qualityWarning.textContent = warnings.join(" ");

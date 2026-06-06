@@ -315,6 +315,57 @@ button,
   color: #fff;
 }
 
+/* Model Status Panel */
+.model-status-panel {
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow);
+}
+
+.status-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.status-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-stat span {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-stat strong {
+  font-size: 1.2rem;
+  color: #fff;
+  font-weight: 800;
+}
+
+#forecastStateText {
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* Warnings */
+.warning {
+  margin-bottom: 24px;
+  border-left: 4px solid var(--amber);
+  color: var(--amber);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
 /* Metrics Grid */
 .metrics-grid {
   display: grid;
