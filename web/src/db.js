@@ -78,17 +78,38 @@ export async function exportBackup(db) {
 
 export async function importBackup(db, backup) {
   if (!backup || backup.schema !== "solar-prophecy.backup.v1" || !Array.isArray(backup.readings)) {
-    throw new Error("Unsupported backup file.");
+    throw new Error("Unsupported or invalid backup file.");
   }
 
+  // Clear existing readings and settings to ensure a clean restore state
   const readTx = db.transaction(READING_STORE, "readwrite");
   const readStore = readTx.objectStore(READING_STORE);
   await txRequest(readStore.clear());
+  
+  // Validate and insert readings
   for (const reading of backup.readings) {
-    await txRequest(readStore.put(reading));
+    if (!reading.timestamp || typeof reading.value !== "number") continue;
+    
+    // Ensure the reading has an ID
+    if (!reading.id) {
+      reading.id = (typeof crypto !== "undefined" && crypto.randomUUID) 
+        ? crypto.randomUUID() 
+        : Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+    
+    readStore.put(reading);
   }
 
+  // Wait for all readings to be committed
+  await new Promise((resolve, reject) => {
+    readTx.oncomplete = resolve;
+    readTx.onerror = () => reject(readTx.error);
+  });
+
   if (backup.settings && typeof backup.settings === "object") {
+    // Clear settings before saving new ones
+    const settingsTx = db.transaction(SETTINGS_STORE, "readwrite");
+    await txRequest(settingsTx.objectStore(SETTINGS_STORE).clear());
     await saveSettings(db, backup.settings);
   }
 }

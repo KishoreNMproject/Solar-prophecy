@@ -110,15 +110,37 @@ function bindEvents() {
   });
 
   els.importData.addEventListener("change", async () => {
-    const file = els.importData.files[0];
-    if (!file) return;
-    const backup = JSON.parse(await file.text());
-    await importBackup(db, backup);
-    readings = await getReadings(db);
-    settings = await getSettings(db);
-    els.installationDate.value = settings.installationDate || "";
-    await refresh("Backup restored.");
-    els.importData.value = "";
+    try {
+      const file = els.importData.files[0];
+      if (!file) return;
+
+      const text = await file.text();
+      let backup;
+      try {
+        backup = JSON.parse(text);
+      } catch (e) {
+        throw new Error("The selected file is not a valid JSON backup.");
+      }
+
+      await importBackup(db, backup);
+      
+      // Update local state and UI
+      settings = await getSettings(db);
+      if (els.installationDate) {
+        els.installationDate.value = settings.installationDate || "";
+      }
+      
+      await refresh("Backup restored successfully. Analytics have been recalculated.");
+    } catch (err) {
+      console.error("Import failed:", err);
+      if (els.entryMessage) {
+        els.entryMessage.textContent = "Import failed: " + err.message;
+      } else {
+        alert("Import failed: " + err.message);
+      }
+    } finally {
+      els.importData.value = "";
+    }
   });
 
   window.addEventListener("resize", () => renderCharts());

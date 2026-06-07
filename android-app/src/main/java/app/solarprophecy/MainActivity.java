@@ -4,12 +4,13 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Environment;
 import android.os.Bundle;
 import android.webkit.JavascriptInterface;
-import android.webkit.WebSettings;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
@@ -21,9 +22,11 @@ import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
     private static final int CREATE_FILE_REQUEST_CODE = 1;
+    private static final int FILE_CHOOSER_REQUEST_CODE = 2;
     private WebView webView;
     private WebViewAssetLoader assetLoader;
     private String pendingBackupJson;
+    private ValueCallback<Uri[]> mFilePathCallback;
 
     @Override
     @SuppressLint("SetJavaScriptEnabled")
@@ -41,6 +44,27 @@ public class MainActivity extends Activity {
                 return assetLoader.shouldInterceptRequest(request.getUrl());
             }
         });
+        
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                if (mFilePathCallback != null) {
+                    mFilePathCallback.onReceiveValue(null);
+                }
+                mFilePathCallback = filePathCallback;
+
+                Intent intent = fileChooserParams.createIntent();
+                try {
+                    startActivityForResult(intent, FILE_CHOOSER_REQUEST_CODE);
+                } catch (Exception e) {
+                    mFilePathCallback = null;
+                    Toast.makeText(MainActivity.this, "Failed to open file picker", Toast.LENGTH_SHORT).show();
+                    return false;
+                }
+                return true;
+            }
+        });
+
         webView.addJavascriptInterface(new BackupBridge(), "SolarAndroid");
 
         WebSettings settings = webView.getSettings();
@@ -57,12 +81,32 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == CREATE_FILE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
-            Uri uri = data.getData();
-            if (uri != null && pendingBackupJson != null) {
-                saveToUri(uri, pendingBackupJson);
-                pendingBackupJson = null;
+        
+        if (requestCode == CREATE_FILE_REQUEST_CODE) {
+            if (resultCode == RESULT_OK && data != null) {
+                Uri uri = data.getData();
+                if (uri != null && pendingBackupJson != null) {
+                    saveToUri(uri, pendingBackupJson);
+                }
             }
+            pendingBackupJson = null;
+        } else if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
+            if (mFilePathCallback == null) return;
+            Uri[] results = null;
+            if (resultCode == RESULT_OK && data != null) {
+                String dataString = data.getDataString();
+                if (dataString != null) {
+                    results = new Uri[]{Uri.parse(dataString)};
+                } else if (data.getClipData() != null) {
+                    int count = data.getClipData().getItemCount();
+                    results = new Uri[count];
+                    for (int i = 0; i < count; i++) {
+                        results[i] = data.getClipData().getItemAt(i).getUri();
+                    }
+                }
+            }
+            mFilePathCallback.onReceiveValue(results);
+            mFilePathCallback = null;
         }
     }
 
