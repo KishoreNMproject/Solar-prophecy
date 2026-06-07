@@ -9,6 +9,17 @@ The UI has improved significantly, but the analytics layer is still fundamentall
 - **Data Integrity:** Only the latest observation of a day becomes the **Daily Closing Record**. Historical accounting must consume Daily Closing Records only.
 - **Forecast Gatekeeping:** Respect data availability thresholds (0-6: Learning, 7-29: Limited, 30+: Normal). Hide long-range predictions until sufficient data exists.
 - **Scope Restriction:** Focus exclusively on correcting the data model and analytics architecture. Do not implement UI, visual, or forecasting algorithm changes unless required for correctness/gatekeeping.
+CRITICAL:
+
+Do NOT provide source code changes only.
+
+Do NOT stop after editing files.
+
+The task is considered FAILED unless a SIGNED RELEASE APK is successfully generated and its exact output path is reported.
+
+If release signing is impossible, identify the exact missing configuration and stop with a failure report.
+
+A debug APK is not an acceptable deliverable.
 
 ## Current Known Problems
 1. **Intraday Influence:** Multiple observations per day incorrectly influence analytics.
