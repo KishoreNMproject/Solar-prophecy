@@ -38,6 +38,7 @@ const els = {
   modelStatusStats: document.querySelector("#modelStatusStats"),
   forecastStateText: document.querySelector("#forecastStateText"),
   exportData: document.querySelector("#exportData"),
+  importTrigger: document.querySelector("#importTrigger"),
   importData: document.querySelector("#importData"),
   gaugeProgress: document.querySelector("#gaugeProgress"),
   gaugeValue: document.querySelector("#gaugeValue"),
@@ -109,10 +110,19 @@ function bindEvents() {
     URL.revokeObjectURL(url);
   });
 
+  els.importTrigger.addEventListener("click", () => {
+    els.importData.click();
+  });
+
   els.importData.addEventListener("change", async () => {
     try {
       const file = els.importData.files[0];
       if (!file) return;
+
+      if (els.entryMessage) {
+        els.entryMessage.textContent = "Processing backup file...";
+        els.entryMessage.style.color = "var(--green)";
+      }
 
       const text = await file.text();
       let backup;
@@ -123,18 +133,19 @@ function bindEvents() {
       }
 
       await importBackup(db, backup);
-      
+
       // Update local state and UI
       settings = await getSettings(db);
       if (els.installationDate) {
         els.installationDate.value = settings.installationDate || "";
       }
-      
-      await refresh("Backup restored successfully. Analytics have been recalculated.");
+
+      await refresh("Backup restored successfully. Analytics have been recalculated.");      
     } catch (err) {
       console.error("Import failed:", err);
       if (els.entryMessage) {
         els.entryMessage.textContent = "Import failed: " + err.message;
+        els.entryMessage.style.color = "var(--danger)";
       } else {
         alert("Import failed: " + err.message);
       }

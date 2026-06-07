@@ -17,6 +17,48 @@ The UI has improved significantly, but the analytics layer is still fundamentall
 4. **Premature Long-range Projections:** Annual forecasts appear with only a few records.
 5. **Misleading Visualizations:** Charts generate representations despite insufficient data.
 
+# Android Build Completion Rules
+
+Solar Prophecy is an Android application.
+
+A task is NOT considered complete merely because source code was modified.
+
+For every completed feature, bug fix, UI change, analytics change, storage change, or architecture change:
+
+Required completion checklist:
+
+1. Build web application.
+2. Verify web build succeeds.
+3. Sync updated web assets into Android project.
+4. Build Android Debug APK.
+5. Verify APK generation succeeds.
+6. Report APK output path.
+7. If requested for release:
+
+   * Build signed Release APK.
+   * Build Release AAB.
+   * Report output paths.
+
+Do not claim a task is complete until the Android build succeeds.
+
+If the Android build fails:
+
+* Stop.
+* Report the build failure.
+* Explain the error.
+* Do not mark the task complete.
+
+Expected deliverables after implementation:
+
+* Updated source code.
+* Updated web build.
+* Updated Android build.
+* APK path.
+* Build summary.
+
+A source code modification without a successful Android build is considered incomplete.
+
+
 ## Roadmap & Implementation Steps
 
 ### Step 1 - Audit
