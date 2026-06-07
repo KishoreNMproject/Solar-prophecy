@@ -89,34 +89,34 @@ export function renderLineChart(canvas, points, options = {}) {
 function setup(canvas) {
   const ratio = window.devicePixelRatio || 1;
   const width = canvas.clientWidth || 320;
-  const height = canvas.clientHeight || 260;
+  const height = canvas.clientHeight || 180;
   canvas.width = width * ratio;
   canvas.height = height * ratio;
   const ctx = canvas.getContext("2d");
   ctx.scale(ratio, ratio);
   ctx.clearRect(0, 0, width, height);
-  ctx.font = "600 12px Inter, ui-sans-serif, system-ui, sans-serif";
+  ctx.font = "600 11px Inter, ui-sans-serif, system-ui, sans-serif";
   return ctx;
 }
 
 function chartBox(canvas) {
   const width = canvas.clientWidth || 320;
-  const height = canvas.clientHeight || 260;
+  const height = canvas.clientHeight || 180;
   return { 
-    left: 44, 
-    top: 30, 
-    right: width - 18, 
-    bottom: height - 44, 
-    width: width - 62, 
-    height: height - 74 
+    left: 40, 
+    top: 20, 
+    right: width - 12, 
+    bottom: height - 32, 
+    width: width - 52, 
+    height: height - 52 
   };
 }
 
 function drawAxes(ctx, box) {
   ctx.strokeStyle = COLORS.grid;
   ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i += 1) {
-    const y = box.top + (box.height / 4) * i;
+  for (let i = 0; i <= 3; i += 1) {
+    const y = box.top + (box.height / 3) * i;
     ctx.beginPath();
     ctx.moveTo(box.left, y);
     ctx.lineTo(box.right, y);
@@ -127,23 +127,25 @@ function drawAxes(ctx, box) {
 function drawEmpty(ctx, canvas, text) {
   ctx.fillStyle = COLORS.text;
   ctx.textAlign = "center";
-  ctx.fillText(text, (canvas.getBoundingClientRect().width || 320) / 2, Number(canvas.getAttribute("height")) / 2);
+  ctx.fillText(text, (canvas.getBoundingClientRect().width || 320) / 2, (canvas.getBoundingClientRect().height || 180) / 2);
 }
 
 function drawTitle(ctx, text, box) {
   ctx.fillStyle = COLORS.text;
   ctx.textAlign = "left";
-  ctx.fillText(text, box.left, box.bottom + 24);
+  ctx.fillText(text, box.left, box.bottom + 18);
 }
 
 function drawLegend(ctx, canvas, kinds) {
-  let x = (canvas.getBoundingClientRect().width || 320) - 238;
-  const y = 18;
+  const width = canvas.getBoundingClientRect().width || 320;
+  let x = width - 190;
+  const y = 14;
   kinds.forEach((kind) => {
     ctx.fillStyle = COLORS[kind];
-    ctx.fillRect(x, y - 8, 10, 10);
+    ctx.fillRect(x, y - 7, 8, 8);
     ctx.fillStyle = COLORS.text;
-    ctx.fillText(kind, x + 15, y);
-    x += 78;
+    ctx.font = "600 10px Inter, sans-serif";
+    ctx.fillText(kind, x + 12, y);
+    x += 62;
   });
 }
