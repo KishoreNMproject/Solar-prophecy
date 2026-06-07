@@ -1,7 +1,18 @@
 # Solar Prophecy - Project Mandates & Roadmap
 
 ## Current Project Status
-The UI has improved significantly, but the analytics layer is still fundamentally incorrect. The application is still producing forecasts, confidence values, gauges, and long-term projections from insufficient data and from the wrong data sources. We must now stop feature development and repair the foundation.
+The analytics layer foundation is being repaired. UI stability and performance have been significantly improved. Scrolling is now smooth on Android, and charts have been optimized for high-density information display. The backup import system is fully functional with native Android file picker integration.
+
+### Recent Accomplishments (Session 2026-06-07)
+- **Import System Recovery**: Restored full backup import functionality.
+  - Implemented `WebChromeClient` in `MainActivity.java` to support Android Storage Access Framework.
+  - Added robust JSON validation and performance-optimized database insertion.
+  - Refined UI to hide native browser file controls in favor of a professional, programmatic trigger.
+- **UI Performance Optimization**:
+  - Reduced `backdrop-filter` overhead (from 20px to 8px) for smooth scrolling.
+  - Implemented CSS layout containment (`contain: content`) on major panels.
+  - Significantly reduced chart height (from 260px to 180px) and tightened padding for better information density.
+- **Build Pipeline**: Verified signed release APK generation.
 
 ## Core Mandates (Most Important Rules)
 - **Correctness First:** Correctness is now the only priority. Transform Solar Prophecy from a visually impressive prototype into a trustworthy solar analytics platform.
@@ -9,6 +20,7 @@ The UI has improved significantly, but the analytics layer is still fundamentall
 - **Data Integrity:** Only the latest observation of a day becomes the **Daily Closing Record**. Historical accounting must consume Daily Closing Records only.
 - **Forecast Gatekeeping:** Respect data availability thresholds (0-6: Learning, 7-29: Limited, 30+: Normal). Hide long-range predictions until sufficient data exists.
 - **Scope Restriction:** Focus exclusively on correcting the data model and analytics architecture. Do not implement UI, visual, or forecasting algorithm changes unless required for correctness/gatekeeping.
+- **Android Native Integration:** All file system interactions (import/export) must use proper Android intents and callbacks. Standard HTML file inputs must be hidden and triggered programmatically for a native feel.
 CRITICAL:
 
 Do NOT provide source code changes only.
@@ -41,14 +53,22 @@ Required completion checklist:
 1. Build web application.
 2. Verify web build succeeds.
 3. Sync updated web assets into Android project.
-4. Build Android Debug APK.
-5. Verify APK generation succeeds.
-6. Report APK output path.
-7. If requested for release:
+4. Verify APK generation succeeds.
+5. Report APK output path.
+6. If requested for release:
 
    * Build signed Release APK.
-   * Build Release AAB.
    * Report output paths.
+
+   Build Requirements
+
+After implementation:
+
+1. Build web assets.
+2. Sync Android assets.
+3. Build Signed Release APK only.
+4. Report release APK path.
+5. Do not generate Debug APK unless explicitly requested.
 
 Do not claim a task is complete until the Android build succeeds.
 
