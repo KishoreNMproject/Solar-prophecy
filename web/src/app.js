@@ -29,6 +29,8 @@ const els = {
   settingsForm: document.querySelector("#settingsForm"),
   settingsView: document.querySelector("#settingsView"),
   settingsEdit: document.querySelector("#settingsEdit"),
+  editSettingsBtn: document.querySelector("#editSettingsBtn"),
+  cancelSettings: document.querySelector("#cancelSettings"),
   capacityDisplay: document.querySelector("#capacityDisplay"),
   yearDisplay: document.querySelector("#yearDisplay"),
   installationDate: document.querySelector("#installationDate"),
@@ -105,11 +107,18 @@ function bindEvents() {
     await refresh("Settings saved.");
   });
 
-  document.querySelectorAll(".editSettingsBtn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      els.settingsView.hidden = true;
-      els.settingsEdit.hidden = false;
-    });
+  els.editSettingsBtn.addEventListener("click", () => {
+    els.settingsEdit.hidden = false;
+    els.editSettingsBtn.hidden = true;
+  });
+
+  els.cancelSettings.addEventListener("click", () => {
+    els.settingsEdit.hidden = true;
+    els.editSettingsBtn.hidden = false;
+    
+    els.installationDate.value = settings.installationDate || "";
+    els.solarCapacity.value = settings.solarCapacity || "";
+    els.solarCapacityUnit.value = settings.solarCapacityUnit || "kW";
   });
 
   els.exportData.addEventListener("click", async () => {
@@ -429,15 +438,20 @@ function renderWarnings() {
 function renderSettingsView() {
   const hasCapacity = !!settings.solarCapacity;
   const hasYear = !!settings.installationDate;
-  
-  if (hasCapacity || hasYear) {
-    els.capacityDisplay.textContent = hasCapacity ? `${settings.solarCapacity} ${settings.solarCapacityUnit}` : "--";
-    els.yearDisplay.textContent = hasYear ? settings.installationDate : "--";
-    els.settingsView.hidden = false;
-    els.settingsEdit.hidden = true;
-  } else {
-    els.settingsView.hidden = true;
+
+  // Always keep the view summary updated
+  els.capacityDisplay.textContent = hasCapacity ? `${settings.solarCapacity} ${settings.solarCapacityUnit}` : "--";
+  els.yearDisplay.textContent = hasYear ? settings.installationDate : "--";
+
+  // First-time setup: show edit form by default, hide edit button
+  if (!hasCapacity && !hasYear) {
     els.settingsEdit.hidden = false;
+    els.editSettingsBtn.hidden = true;
+    els.cancelSettings.hidden = true;
+  } else {
+    els.settingsEdit.hidden = true;
+    els.editSettingsBtn.hidden = false;
+    els.cancelSettings.hidden = false;
   }
 }
 
