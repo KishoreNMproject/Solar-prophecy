@@ -360,10 +360,21 @@ function renderCharts() {
   if (q.actualDayCount >= 7) {
     renderBarChart(document.querySelector("#forecastChart"), forecast, { label: "forecast kWh" });
   } else {
-    // Clear forecast chart if insufficient data
+    // Show meaningful placeholder for forecast
     const canvas = document.querySelector("#forecastChart");
+    renderBarChart(canvas, [], { label: "forecast kWh" }); // Reset registry
     const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const width = canvas.width / (window.devicePixelRatio || 1);
+    const height = canvas.height / (window.devicePixelRatio || 1);
+    ctx.clearRect(0, 0, width, height);
+    
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.font = "600 12px Inter, sans-serif";
+    ctx.fillText("Learning Pattern...", width / 2, height / 2 - 10);
+    ctx.font = "500 10px Inter, sans-serif";
+    ctx.fillStyle = "var(--muted)";
+    ctx.fillText(`Need ${7 - q.actualDayCount} more daily records`, width / 2, height / 2 + 10);
   }
   
   renderLineChart(document.querySelector("#trendChart"), trend, { label: "14-day rolling average" });

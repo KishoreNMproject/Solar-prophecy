@@ -43,10 +43,10 @@ export function renderBarChart(canvas, points, options = {}) {
 
     // Value labels for compact mode if space permits or if hovered
     if ((points.length < 15 || index === hoverIndex) && point.value > 0) {
-      ctx.globalAlpha = index === hoverIndex ? 1 : 0.6;
-      ctx.fillStyle = COLORS.text;
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#fff";
       ctx.textAlign = "center";
-      ctx.font = "700 9px Inter, sans-serif";
+      ctx.font = "800 9px Inter, sans-serif";
       ctx.fillText(point.value.toFixed(1), x + barWidth / 2, y - 4);
     }
   });
@@ -201,30 +201,43 @@ function chartBox(canvas) {
 }
 
 function drawAxes(ctx, box, points, options) {
+  const rawMax = points && points.length > 0 ? Math.max(...points.map((p) => p.value), 0) : 10;
+  const max = rawMax > 0 ? rawMax : 10;
+  
   ctx.strokeStyle = COLORS.grid;
   ctx.lineWidth = 1;
   ctx.textAlign = "right";
-  ctx.fillStyle = COLORS.text;
-  ctx.font = "500 9px Inter, sans-serif";
+  ctx.fillStyle = "#fff"; // High contrast for labels
+  ctx.font = "700 9px Inter, sans-serif";
 
   // Y-axis grid and labels
   for (let i = 0; i <= 3; i += 1) {
     const y = box.top + (box.height / 3) * i;
+    const val = max - (max / 3) * i;
+    
     ctx.beginPath();
     ctx.moveTo(box.left, y);
     ctx.lineTo(box.right, y);
     ctx.stroke();
+    
+    // Y-axis value labels
+    ctx.fillText(val.toFixed(1), box.left - 6, y + 3);
   }
 
   // X-axis labels
   if (points && points.length > 0) {
     ctx.textAlign = "center";
-    const skip = Math.ceil(points.length / 5);
+    // Show labels every 3-7 points depending on total points
+    const skip = Math.max(1, Math.floor(points.length / 6));
     points.forEach((point, index) => {
       if (index % skip === 0 || index === points.length - 1) {
         const x = box.left + (index / (points.length - 1 || 1)) * box.width;
         let label = point.date || "";
-        if (label.includes("-")) label = label.split("-").slice(1).join("/");
+        // Format YYYY-MM-DD to MM/DD
+        if (label.includes("-")) {
+          const parts = label.split("-");
+          label = parts.length > 2 ? `${parts[1]}/${parts[2]}` : label;
+        }
         ctx.fillText(label, x, box.bottom + 12);
       }
     });
@@ -232,17 +245,24 @@ function drawAxes(ctx, box, points, options) {
   
   // Y-axis Unit
   ctx.save();
-  ctx.translate(12, box.top + box.height / 2);
+  ctx.translate(10, box.top + box.height / 2);
   ctx.rotate(-Math.PI / 2);
   ctx.textAlign = "center";
-  ctx.fillText("kWh", 0, 0);
+  ctx.fillStyle = COLORS.text;
+  ctx.fillText("UNIT: kWh", 0, 0);
   ctx.restore();
 }
 
 function drawEmpty(ctx, canvas, text) {
-  ctx.fillStyle = COLORS.text;
+  ctx.fillStyle = "#fff";
   ctx.textAlign = "center";
-  ctx.fillText(text, (canvas.getBoundingClientRect().width || 320) / 2, (canvas.getBoundingClientRect().height || 180) / 2);
+  ctx.font = "600 12px Inter, sans-serif";
+  const lines = text.split("\n");
+  const x = (canvas.clientWidth) / 2;
+  const y = (canvas.clientHeight) / 2 - (lines.length * 8);
+  lines.forEach((line, i) => {
+    ctx.fillText(line, x, y + i * 18);
+  });
 }
 
 function drawTitle(ctx, text, box) {
