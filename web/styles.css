@@ -165,11 +165,36 @@ h1 {
   display: none;
 }
 
-.reading-form {
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-row {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  align-items: end;
-  gap: 10px;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.capacity-input {
+  display: flex;
+  gap: 4px;
+}
+
+.capacity-input select {
+  width: 80px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: #fff;
+  padding: 0 8px;
+  font-weight: 600;
+}
+
+.capacity-input select:focus {
+  outline: none;
+  border-color: var(--green);
 }
 
 .time-mode {

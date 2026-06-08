@@ -28,12 +28,15 @@ const els = {
   entryMessage: document.querySelector("#entryMessage"),
   settingsForm: document.querySelector("#settingsForm"),
   installationDate: document.querySelector("#installationDate"),
+  solarCapacity: document.querySelector("#solarCapacity"),
+  solarCapacityUnit: document.querySelector("#solarCapacityUnit"),
   metricsGrid: document.querySelector("#metricsGrid"),
   readingsTable: document.querySelector("#readingsTable"),
   readingCount: document.querySelector("#readingCount"),
   forecastList: document.querySelector("#forecastList"),
   forecastConfidence: document.querySelector("#forecastConfidence"),
   qualityWarning: document.querySelector("#qualityWarning"),
+  lowGenerationWarning: document.querySelector("#lowGenerationWarning"),
   modelStatus: document.querySelector("#modelStatus"),
   modelStatusStats: document.querySelector("#modelStatusStats"),
   forecastStateText: document.querySelector("#forecastStateText"),
@@ -55,6 +58,8 @@ async function init() {
   els.readingTimestamp.value = localDateTimeValue(new Date());
   setCustomTimestampMode(false);
   els.installationDate.value = settings.installationDate || "";
+  els.solarCapacity.value = settings.solarCapacity || "";
+  els.solarCapacityUnit.value = settings.solarCapacityUnit || "kW";
   bindEvents();
   await refresh();
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./service-worker.js").catch(() => {});
@@ -90,6 +95,8 @@ function bindEvents() {
   els.settingsForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     settings.installationDate = els.installationDate.value;
+    settings.solarCapacity = els.solarCapacity.value;
+    settings.solarCapacityUnit = els.solarCapacityUnit.value;
     await saveSettings(db, settings);
     await refresh("Settings saved.");
   });
@@ -169,6 +176,7 @@ async function refresh(message = "") {
     renderForecast();
     renderCharts();
     renderQuality();
+    renderWarnings();
     if (message) els.entryMessage.textContent = message;
   } catch (err) {
     console.error("Refresh failed:", err);
@@ -250,9 +258,14 @@ function renderMetrics() {
     ["Daily Records", `${q.dailyClosingRecordCount} days`],
     ["Lifetime production", kwh(d.lifetimeProduction)],
     ["Confidence", q.actualDayCount >= 7 ? `${d.forecastConfidence}%` : "0%"],
-    ["System age", d.systemAgeDays == null ? "Unknown" : `${Math.floor(d.systemAgeDays / 365)}y ${d.systemAgeDays % 365}d`],
-    ["Annual Estimate", q.actualDayCount >= 30 ? kwh(d.annualForecast.generation) : "Learning"]
+    ["System age", d.systemAgeDays == null ? "Unknown" : `${Math.floor(d.systemAgeDays / 365)}y ${d.systemAgeDays % 365}d`]
   ];
+
+  if (q.actualDayCount >= 7) {
+    cards.push(["Solar Performance", `${d.solarPerformance.score}% ${d.solarPerformance.status}`]);
+  } else {
+    cards.push(["Annual Estimate", q.actualDayCount >= 30 ? kwh(d.annualForecast.generation) : "Learning"]);
+  }
 
   els.metricsGrid.innerHTML = cards
     .map(([label, value]) => `<article class="metric"><span>${label}</span><strong>${value}</strong></article>`)
@@ -388,8 +401,17 @@ function renderQuality() {
   if (q.missingDayCount > 0) warnings.push(`${q.missingDayCount} missing days are estimated and never treated as actual records.`);
   if (q.forecastReliability === "low" && q.actualDayCount >= 7) warnings.push("Confidence is low due to limited or highly variable data.");
 
+  if (!settings.solarCapacity) {
+    warnings.push("Configure Installed Solar Capacity in Settings for improved forecasting and performance analysis.");
+  }
+
   els.qualityWarning.hidden = warnings.length === 0;
   els.qualityWarning.textContent = warnings.join(" ");
+}
+
+function renderWarnings() {
+  const d = model.dashboard;
+  els.lowGenerationWarning.hidden = !d.lowGenerationDetected;
 }
 
 function resetForm() {

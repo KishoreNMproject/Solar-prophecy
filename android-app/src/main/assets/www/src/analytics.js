@@ -77,16 +77,21 @@ export function buildSolarModel(readings, settings = {}, now = new Date()) {
   const dailyClosingRecords = getDailyClosingRecords(readings);
   const dailySeries = buildDailySeries(dailyClosingRecords);
   
+  // Capacity parsing
+  const capacityValue = Number(settings.solarCapacity) || 0;
+  const capacityUnit = settings.solarCapacityUnit || "kW";
+  const capacityKW = capacityUnit === "W" ? capacityValue / 1000 : capacityValue;
+
   const modelDays = dailySeries.filter((day) => day.generation > 0 || day.kind !== "empty");
   const actualDays = dailySeries.filter((day) => day.kind === "actual");
   const estimatedDays = dailySeries.filter((day) => day.kind === "estimated");
   
   const forecastConfidence = computeConfidence(actualDays, estimatedDays);
   const patterns = learnPatterns(modelDays);
-  const forecasts = buildForecasts(actualDays, patterns, forecastConfidence, now);
+  const forecasts = buildForecasts(actualDays, patterns, forecastConfidence, now, capacityKW);
   const aggregates = aggregateSeries(modelDays);
   const dataQuality = buildDataQuality(actualReadings, dailyClosingRecords, actualDays, estimatedDays, forecastConfidence);
-  const dashboard = buildDashboard(modelDays, actualReadings, forecasts, dataQuality, settings, now, patterns);
+  const dashboard = buildDashboard(modelDays, actualReadings, forecasts, dataQuality, settings, now, patterns, capacityKW);
 
   return {
     readings: actualReadings,
@@ -99,7 +104,8 @@ export function buildSolarModel(readings, settings = {}, now = new Date()) {
     patterns,
     forecasts,
     dataQuality,
-    dashboard
+    dashboard,
+    capacityKW
   };
 }
 
@@ -146,7 +152,7 @@ function learnPatterns(days) {
   return { averageDaily: avg, variability, weekday, monthly, trend };
 }
 
-function buildForecasts(actualDays, patterns, baseConfidence, now) {
+function buildForecasts(actualDays, patterns, baseConfidence, now, capacityKW) {
   const dayCount = actualDays.length;
   const lastDate = actualDays.length ? actualDays[actualDays.length - 1].date : toDateKey(now);
   
@@ -166,7 +172,7 @@ function buildForecasts(actualDays, patterns, baseConfidence, now) {
   for (let i = 1; i <= 7; i += 1) {
     const date = addDays(lastDate, i);
     const d = fromDateKey(date);
-    const predicted = predictDay(patterns, d, actualDays.length + i);
+    const predicted = predictDay(patterns, d, actualDays.length + i, capacityKW);
     sevenDay.push({
       date,
       generation: round(predicted),
@@ -178,31 +184,41 @@ function buildForecasts(actualDays, patterns, baseConfidence, now) {
 
   const state = dayCount < 30 ? "limited" : "normal";
   const tomorrow = sevenDay[0] || null;
-  const monthly = forecastPeriod(actualDays, patterns, baseConfidence, 30);
-  const biMonthly = forecastPeriod(actualDays, patterns, baseConfidence, 60);
-  const annual = forecastPeriod(actualDays, patterns, baseConfidence, 365);
+  const monthly = forecastPeriod(actualDays, patterns, baseConfidence, 30, capacityKW);
+  const biMonthly = forecastPeriod(actualDays, patterns, baseConfidence, 60, capacityKW);
+  const annual = forecastPeriod(actualDays, patterns, baseConfidence, 365, capacityKW);
 
   return { tomorrow, sevenDay, monthly, biMonthly, annual, confidence: Math.round(baseConfidence * 100), state };
 }
 
-function forecastPeriod(days, patterns, confidence, count) {
+function forecastPeriod(days, patterns, confidence, count, capacityKW) {
   const start = days.length ? days[days.length - 1].date : toDateKey(new Date());
   let total = 0;
   for (let i = 1; i <= count; i += 1) {
     const date = fromDateKey(addDays(start, i));
-    total += predictDay(patterns, date, days.length + i);
+    total += predictDay(patterns, date, days.length + i, capacityKW);
   }
   return { days: count, generation: round(total), confidence: Math.round(confidence * 100) };
 }
 
-function predictDay(patterns, date, index) {
+function predictDay(patterns, date, index, capacityKW) {
   if (patterns.averageDaily === 0) return 0;
   const baseline = patterns.averageDaily || 0;
   const weekday = patterns.weekday.get(date.getDay()) ?? baseline;
   const month = patterns.monthly.get(date.getMonth() + 1) ?? baseline;
   const trend = (patterns.trend.slope || 0) * index + (patterns.trend.intercept || baseline);
   const blended = baseline * 0.45 + weekday * 0.2 + month * 0.25 + trend * 0.1;
-  return Math.max(0, blended);
+  
+  let prediction = Math.max(0, blended);
+  
+  // Capacity constraint: A system shouldn't exceed its theoretical max output significantly.
+  // 8kWh per kW of capacity is a very generous daily ceiling.
+  if (capacityKW > 0) {
+    const maxDaily = capacityKW * 8;
+    prediction = Math.min(prediction, maxDaily);
+  }
+
+  return prediction;
 }
 
 function aggregateSeries(days) {
@@ -255,7 +271,7 @@ function buildDataQuality(readings, dailyClosingRecords, actualDays, estimatedDa
   };
 }
 
-function buildDashboard(days, readings, forecasts, dataQuality, settings, now, patterns) {
+function buildDashboard(days, readings, forecasts, dataQuality, settings, now, patterns, capacityKW) {
   const today = toDateKey(now);
   const todayGeneration = days.find((day) => day.date === today)?.generation || 0;
   const last7 = days.slice(-7);
@@ -269,7 +285,37 @@ function buildDashboard(days, readings, forecasts, dataQuality, settings, now, p
   const ageDays = ageStart ? Math.max(0, Math.floor((now - ageStart) / DAY_MS)) : null;
   
   const averageDaily = actualDays.length >= 7 ? mean(actualDays.map((day) => day.generation)) : 0;
-  const expectedToday = forecasts.state !== "learning" ? predictDay(patterns, now, actualDays.length) : 0;
+  const expectedToday = forecasts.state !== "learning" ? predictDay(patterns, now, actualDays.length, capacityKW) : 0;
+
+  // Performance Score calculation
+  let performanceScore = 100;
+  let performanceStatus = "Excellent";
+  
+  if (expectedToday > 0) {
+    const ratio = todayGeneration / expectedToday;
+    performanceScore = Math.round(ratio * 100);
+    
+    if (performanceScore >= 90) performanceStatus = "Excellent";
+    else if (performanceScore >= 70) performanceStatus = "Good";
+    else if (performanceScore >= 50) performanceStatus = "Moderate";
+    else if (performanceScore >= 30) performanceStatus = "Poor";
+    else performanceStatus = "Critical";
+  } else if (todayGeneration > 0 && capacityKW > 0) {
+    // If no expectation yet, compare with capacity potential (roughly)
+    const ratio = todayGeneration / (capacityKW * 5); // 5 is a typical good day factor
+    performanceScore = Math.min(100, Math.round(ratio * 100));
+    
+    if (performanceScore >= 90) performanceStatus = "Excellent";
+    else if (performanceScore >= 70) performanceStatus = "Good";
+    else if (performanceScore >= 50) performanceStatus = "Moderate";
+    else if (performanceScore >= 30) performanceStatus = "Poor";
+    else performanceStatus = "Critical";
+  }
+
+  const lowGenerationDetected = forecasts.state !== "learning" && 
+                                expectedToday > 0 && 
+                                todayGeneration < (expectedToday * 0.4) && 
+                                actualDays.length >= 7;
 
   return {
     todayGeneration: round(todayGeneration),
@@ -287,7 +333,12 @@ function buildDashboard(days, readings, forecasts, dataQuality, settings, now, p
     annualForecast: forecasts.annual,
     systemAgeDays: ageDays,
     observedLifetimeGeneration: readings.length ? round(readings[readings.length - 1].value - readings[0].value) : 0,
-    forecastState: forecasts.state
+    forecastState: forecasts.state,
+    solarPerformance: {
+      score: performanceScore,
+      status: performanceStatus
+    },
+    lowGenerationDetected
   };
 }
 
