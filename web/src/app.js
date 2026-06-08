@@ -261,12 +261,12 @@ function renderMetrics() {
 
 function renderReadings() {
   const sorted = [...model.readings].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  els.readingCount.textContent = `${sorted.length} actual readings`;
+  els.readingCount.textContent = `${sorted.length} readings recorded`;
   els.readingsTable.innerHTML = sorted
     .map(
       (reading) => `
       <tr>
-        <td style="font-size:0.9rem; font-weight:500;">${formatDateTime(reading.timestamp)}</td>
+        <td style="font-size:0.85rem; font-weight:500;">${formatDateTime(reading.timestamp)}</td>
         <td style="font-weight:700;">${kwh(reading.value)}</td>
         <td class="row-actions">
           <button type="button" class="secondary" data-edit="${reading.id}">Edit</button>
