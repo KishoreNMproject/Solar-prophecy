@@ -53,7 +53,9 @@ export function renderBarChart(canvas, points, options = {}) {
   
   ctx.globalAlpha = 1;
   drawTitle(ctx, options.label || `${rawMax.toFixed(1)} kWh max`, box);
-  drawLegend(ctx, canvas, ["actual", "estimated", "forecast"]);
+  
+  const presentKinds = [...new Set(points.map(p => p.kind))].filter(k => COLORS[k]);
+  drawLegend(ctx, canvas, presentKinds);
   
   if (hoverIndex !== -1) {
     drawTooltip(ctx, canvas, box, points[hoverIndex], interaction);
@@ -122,7 +124,10 @@ export function renderLineChart(canvas, points, options = {}) {
   });
   
   drawTitle(ctx, options.label || `${rawMax.toFixed(1)} peak`, box);
-  if (options.legend !== false) drawLegend(ctx, canvas, ["actual", "estimated", "forecast"]);
+  if (options.legend !== false) {
+    const presentKinds = [...new Set(points.map(p => p.kind))].filter(k => COLORS[k]);
+    drawLegend(ctx, canvas, presentKinds);
+  }
   
   if (hoverIndex !== -1) {
     drawTooltip(ctx, canvas, box, points[hoverIndex], interaction);
