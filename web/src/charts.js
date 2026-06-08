@@ -4,13 +4,23 @@ const COLORS = {
   forecast: "#3498db",
   grid: "rgba(255, 255, 255, 0.05)",
   text: "#8ca5a0",
-  trend: "#9b59b6"
+  trend: "#9b59b6",
+  tooltipBg: "rgba(20, 26, 25, 0.95)",
+  tooltipBorder: "rgba(255, 255, 255, 0.1)"
 };
 
+// Store chart data for interaction
+const chartRegistry = new Map();
+
 export function renderBarChart(canvas, points, options = {}) {
+  chartRegistry.set(canvas, { type: "bar", points, options });
   const ctx = setup(canvas);
   const box = chartBox(canvas);
-  drawAxes(ctx, box);
+  
+  const interaction = chartRegistry.get(canvas).interaction;
+  const hoverIndex = interaction ? interaction.index : -1;
+
+  drawAxes(ctx, box, points, options);
   
   if (points.length < 2) {
     return drawEmpty(ctx, canvas, "Learning from observations...");
@@ -18,7 +28,7 @@ export function renderBarChart(canvas, points, options = {}) {
 
   const rawMax = Math.max(...points.map((point) => point.value), 0);
   const max = rawMax > 0 ? rawMax : 1;
-  const barWidth = Math.max(2, (box.width / points.length) - 2);
+  const barWidth = Math.max(1, (box.width / points.length) - 2);
   
   points.forEach((point, index) => {
     const height = Math.max(2, (point.value / max) * box.height);
@@ -27,18 +37,38 @@ export function renderBarChart(canvas, points, options = {}) {
     
     ctx.fillStyle = COLORS[point.kind] || COLORS.actual;
     ctx.globalAlpha = point.kind === "estimated" ? 0.4 : point.kind === "forecast" ? 0.6 : 1;
+    if (index === hoverIndex) ctx.globalAlpha = 1;
+    
     ctx.fillRect(x, y, Math.min(barWidth, box.width / points.length), height);
+
+    // Value labels for compact mode if space permits or if hovered
+    if ((points.length < 15 || index === hoverIndex) && point.value > 0) {
+      ctx.globalAlpha = index === hoverIndex ? 1 : 0.6;
+      ctx.fillStyle = COLORS.text;
+      ctx.textAlign = "center";
+      ctx.font = "700 9px Inter, sans-serif";
+      ctx.fillText(point.value.toFixed(1), x + barWidth / 2, y - 4);
+    }
   });
   
   ctx.globalAlpha = 1;
   drawTitle(ctx, options.label || `${rawMax.toFixed(1)} kWh max`, box);
   drawLegend(ctx, canvas, ["actual", "estimated", "forecast"]);
+  
+  if (hoverIndex !== -1) {
+    drawTooltip(ctx, canvas, box, points[hoverIndex], interaction);
+  }
 }
 
 export function renderLineChart(canvas, points, options = {}) {
+  chartRegistry.set(canvas, { type: "line", points, options });
   const ctx = setup(canvas);
   const box = chartBox(canvas);
-  drawAxes(ctx, box);
+  
+  const interaction = chartRegistry.get(canvas).interaction;
+  const hoverIndex = interaction ? interaction.index : -1;
+
+  drawAxes(ctx, box, points, options);
   
   if (points.length < 2) {
     return drawEmpty(ctx, canvas, "More data needed for trends");
@@ -74,16 +104,29 @@ export function renderLineChart(canvas, points, options = {}) {
   ctx.setLineDash([]);
   ctx.globalAlpha = 1;
   points.forEach((point, index) => {
-    if (points.length > 50 && index % Math.floor(points.length / 10) !== 0) return;
-    const pos = locate(point, index);
-    ctx.fillStyle = COLORS[point.kind] || options.color || COLORS.actual;
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
-    ctx.fill();
+    const isHovered = index === hoverIndex;
+    const shouldDraw = isHovered || (points.length <= 50) || (index % Math.floor(points.length / 10) === 0);
+    
+    if (shouldDraw) {
+      const pos = locate(point, index);
+      ctx.fillStyle = COLORS[point.kind] || options.color || COLORS.actual;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, isHovered ? 6 : 4, 0, Math.PI * 2);
+      ctx.fill();
+      if (isHovered) {
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
   });
   
   drawTitle(ctx, options.label || `${rawMax.toFixed(1)} peak`, box);
   if (options.legend !== false) drawLegend(ctx, canvas, ["actual", "estimated", "forecast"]);
+  
+  if (hoverIndex !== -1) {
+    drawTooltip(ctx, canvas, box, points[hoverIndex], interaction);
+  }
 }
 
 function setup(canvas) {
@@ -96,6 +139,51 @@ function setup(canvas) {
   ctx.scale(ratio, ratio);
   ctx.clearRect(0, 0, width, height);
   ctx.font = "600 11px Inter, ui-sans-serif, system-ui, sans-serif";
+  
+  if (!canvas.dataset.interactive) {
+    const handleEvent = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+      
+      const entry = chartRegistry.get(canvas);
+      if (!entry) return;
+      
+      const box = chartBox(canvas);
+      let index = -1;
+      
+      if (x >= box.left && x <= box.right) {
+        if (entry.type === "bar") {
+          index = Math.floor(((x - box.left) / box.width) * entry.points.length);
+        } else {
+          index = Math.round(((x - box.left) / box.width) * (entry.points.length - 1));
+        }
+      }
+      
+      index = Math.max(0, Math.min(index, entry.points.length - 1));
+      
+      if (index !== -1) {
+        entry.interaction = { index, x, y };
+        if (entry.type === "bar") renderBarChart(canvas, entry.points, entry.options);
+        else renderLineChart(canvas, entry.points, entry.options);
+      }
+    };
+    
+    canvas.addEventListener("mousemove", handleEvent);
+    canvas.addEventListener("touchstart", handleEvent, { passive: true });
+    canvas.addEventListener("mouseleave", () => {
+      const entry = chartRegistry.get(canvas);
+      if (entry) {
+        entry.interaction = null;
+        if (entry.type === "bar") renderBarChart(canvas, entry.points, entry.options);
+        else renderLineChart(canvas, entry.points, entry.options);
+      }
+    });
+    canvas.dataset.interactive = "true";
+  }
+  
   return ctx;
 }
 
@@ -104,17 +192,22 @@ function chartBox(canvas) {
   const height = canvas.clientHeight || 180;
   return { 
     left: 40, 
-    top: 20, 
+    top: 25, 
     right: width - 12, 
-    bottom: height - 32, 
+    bottom: height - 35, 
     width: width - 52, 
-    height: height - 52 
+    height: height - 60 
   };
 }
 
-function drawAxes(ctx, box) {
+function drawAxes(ctx, box, points, options) {
   ctx.strokeStyle = COLORS.grid;
   ctx.lineWidth = 1;
+  ctx.textAlign = "right";
+  ctx.fillStyle = COLORS.text;
+  ctx.font = "500 9px Inter, sans-serif";
+
+  // Y-axis grid and labels
   for (let i = 0; i <= 3; i += 1) {
     const y = box.top + (box.height / 3) * i;
     ctx.beginPath();
@@ -122,6 +215,28 @@ function drawAxes(ctx, box) {
     ctx.lineTo(box.right, y);
     ctx.stroke();
   }
+
+  // X-axis labels
+  if (points && points.length > 0) {
+    ctx.textAlign = "center";
+    const skip = Math.ceil(points.length / 5);
+    points.forEach((point, index) => {
+      if (index % skip === 0 || index === points.length - 1) {
+        const x = box.left + (index / (points.length - 1 || 1)) * box.width;
+        let label = point.date || "";
+        if (label.includes("-")) label = label.split("-").slice(1).join("/");
+        ctx.fillText(label, x, box.bottom + 12);
+      }
+    });
+  }
+  
+  // Y-axis Unit
+  ctx.save();
+  ctx.translate(12, box.top + box.height / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = "center";
+  ctx.fillText("kWh", 0, 0);
+  ctx.restore();
 }
 
 function drawEmpty(ctx, canvas, text) {
@@ -133,19 +248,61 @@ function drawEmpty(ctx, canvas, text) {
 function drawTitle(ctx, text, box) {
   ctx.fillStyle = COLORS.text;
   ctx.textAlign = "left";
-  ctx.fillText(text, box.left, box.bottom + 18);
+  ctx.font = "600 10px Inter, sans-serif";
+  ctx.fillText(text.toUpperCase(), box.left, box.top - 10);
 }
 
 function drawLegend(ctx, canvas, kinds) {
   const width = canvas.getBoundingClientRect().width || 320;
-  let x = width - 190;
+  let x = width - 160;
   const y = 14;
   kinds.forEach((kind) => {
     ctx.fillStyle = COLORS[kind];
     ctx.fillRect(x, y - 7, 8, 8);
     ctx.fillStyle = COLORS.text;
-    ctx.font = "600 10px Inter, sans-serif";
+    ctx.font = "600 9px Inter, sans-serif";
     ctx.fillText(kind, x + 12, y);
-    x += 62;
+    x += 52;
   });
 }
+
+function drawTooltip(ctx, canvas, box, point, interaction) {
+  const { x, y } = interaction;
+  const padding = 8;
+  const lineHeight = 14;
+  
+  const lines = [
+    point.date ? `Date: ${point.date}` : null,
+    `Value: ${point.value.toFixed(2)} kWh`,
+    point.kind ? `Type: ${point.kind}` : null,
+    point.confidence ? `Confidence: ${Math.round(point.confidence * 100)}%` : null
+  ].filter(Boolean);
+
+  ctx.font = "600 10px Inter, sans-serif";
+  const maxWidth = Math.max(...lines.map(l => ctx.measureText(l).width)) + padding * 2;
+  const height = lines.length * lineHeight + padding * 2;
+  
+  let tx = x + 10;
+  let ty = y - height - 10;
+  
+  if (tx + maxWidth > canvas.clientWidth) tx = x - maxWidth - 10;
+  if (ty < 0) ty = y + 10;
+  
+  ctx.fillStyle = COLORS.tooltipBg;
+  ctx.strokeStyle = COLORS.tooltipBorder;
+  ctx.lineWidth = 1;
+  
+  // Draw tooltip box
+  ctx.beginPath();
+  ctx.roundRect(tx, ty, maxWidth, height, 4);
+  ctx.fill();
+  ctx.stroke();
+  
+  // Draw text
+  ctx.fillStyle = "#fff";
+  ctx.textAlign = "left";
+  lines.forEach((line, i) => {
+    ctx.fillText(line, tx + padding, ty + padding + 10 + i * lineHeight);
+  });
+}
+

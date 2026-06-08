@@ -330,15 +330,28 @@ function renderForecast() {
 
 function renderCharts() {
   const q = model.dataQuality;
-  const daily = model.dailySeries.slice(-45).map((day) => ({ value: day.generation, kind: day.kind }));
+  const daily = model.dailySeries.slice(-45).map((day) => ({ 
+    value: day.generation, 
+    kind: day.kind, 
+    date: day.date,
+    confidence: day.confidence
+  }));
+  
   const monthly = monthlyChartPoints();
-  const lifetime = running(model.dailySeries.filter(d => d.kind !== "forecast").sort((a, b) => a.date.localeCompare(b.date)))
-    .slice(-120)
-    .map((point) => ({ value: point.value, kind: point.kind }));
-  const forecast = model.forecastSeries.map((day) => ({ value: day.generation, kind: "forecast" }));
+  
+  const baseReading = model.readings.length > 0 ? model.readings[0].value : 0;
+  const lifetime = running(model.dailySeries.filter(d => d.kind !== "forecast").sort((a, b) => a.date.localeCompare(b.date)), baseReading)
+    .slice(-120);
+
+  const forecast = model.forecastSeries.map((day) => ({ 
+    value: day.generation, 
+    kind: "forecast",
+    date: day.date,
+    confidence: day.confidence
+  }));
+  
   const trend = rollingAverage(model.actualDailySeries.concat(model.estimatedDailySeries), 14)
-    .slice(-90)
-    .map((point) => ({ value: point.value, kind: point.kind }));
+    .slice(-90);
 
   renderBarChart(document.querySelector("#dailyChart"), daily);
   renderBarChart(document.querySelector("#monthlyChart"), monthly, { label: "monthly kWh" });
@@ -390,7 +403,11 @@ function monthlyChartPoints() {
   return model.aggregates.monthly.map((item) => {
     const monthDays = days.filter((day) => day.date.startsWith(item.period));
     const hasEstimate = monthDays.some((day) => day.kind === "estimated");
-    return { value: item.generation, kind: hasEstimate ? "estimated" : "actual" };
+    return { 
+      value: item.generation, 
+      kind: hasEstimate ? "estimated" : "actual",
+      date: item.period
+    };
   });
 }
 
@@ -415,17 +432,25 @@ function sum(values) {
   return values.reduce((total, value) => total + value, 0);
 }
 
-function running(days) {
-  let total = 0;
+function running(days, initialValue = 0) {
+  let total = initialValue;
   return days.map((day) => {
     total += day.generation;
-    return { value: total, kind: day.kind };
+    return { 
+      value: total, 
+      kind: day.kind,
+      date: day.date
+    };
   });
 }
 
 function rollingAverage(days, windowSize) {
   return days.map((day, index) => {
     const window = days.slice(Math.max(0, index - windowSize + 1), index + 1);
-    return { value: sum(window.map((item) => item.generation)) / window.length, kind: day.kind };
+    return { 
+      value: sum(window.map((item) => item.generation)) / window.length, 
+      kind: day.kind,
+      date: day.date
+    };
   });
 }
