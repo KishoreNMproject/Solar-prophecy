@@ -330,53 +330,52 @@ function renderForecast() {
 
 function renderCharts() {
   const q = model.dataQuality;
+  const isLearning = q.actualDayCount < 7;
+  const isDeveloping = q.actualDayCount < 30;
+
+  // Daily Chart
   const daily = model.dailySeries.slice(-45).map((day) => ({ 
     value: day.generation, 
     kind: day.kind, 
     date: day.date,
     confidence: day.confidence
   }));
-  
-  const monthly = monthlyChartPoints();
-  
-  const baseReading = model.readings.length > 0 ? model.readings[0].value : 0;
-  const lifetime = running(model.dailySeries.filter(d => d.kind !== "forecast").sort((a, b) => a.date.localeCompare(b.date)), baseReading)
-    .slice(-120);
-
-  const forecast = model.forecastSeries.map((day) => ({ 
-    value: day.generation, 
-    kind: "forecast",
-    date: day.date,
-    confidence: day.confidence
-  }));
-  
-  const trend = rollingAverage(model.actualDailySeries.concat(model.estimatedDailySeries), 14)
-    .slice(-90);
-
   renderBarChart(document.querySelector("#dailyChart"), daily);
-  renderBarChart(document.querySelector("#monthlyChart"), monthly, { label: "monthly kWh" });
-  renderLineChart(document.querySelector("#lifetimeChart"), lifetime, { label: "cumulative kWh" });
-  
-  if (q.actualDayCount >= 7) {
-    renderBarChart(document.querySelector("#forecastChart"), forecast, { label: "forecast kWh" });
+
+  // Monthly Chart
+  const monthlyPanel = document.querySelector("#monthlyPanel");
+  const monthlyPlaceholder = monthlyPanel.querySelector(".learning-placeholder");
+  if (isDeveloping) {
+    monthlyPanel.classList.add("compact");
+    monthlyPlaceholder.hidden = false;
   } else {
-    // Show meaningful placeholder for forecast
-    const canvas = document.querySelector("#forecastChart");
-    renderBarChart(canvas, [], { label: "forecast kWh" }); // Reset registry
-    const ctx = canvas.getContext("2d");
-    const width = canvas.width / (window.devicePixelRatio || 1);
-    const height = canvas.height / (window.devicePixelRatio || 1);
-    ctx.clearRect(0, 0, width, height);
-    
-    ctx.fillStyle = "#fff";
-    ctx.textAlign = "center";
-    ctx.font = "600 12px Inter, sans-serif";
-    ctx.fillText("Learning Pattern...", width / 2, height / 2 - 10);
-    ctx.font = "500 10px Inter, sans-serif";
-    ctx.fillStyle = "var(--muted)";
-    ctx.fillText(`Need ${7 - q.actualDayCount} more daily records`, width / 2, height / 2 + 10);
+    monthlyPanel.classList.remove("compact");
+    monthlyPlaceholder.hidden = true;
+    const monthly = monthlyChartPoints();
+    renderBarChart(document.querySelector("#monthlyChart"), monthly, { label: "monthly kWh" });
+  }
+
+  // Forecast Chart
+  const forecastPanel = document.querySelector("#forecastPanel");
+  const forecastPlaceholder = forecastPanel.querySelector(".learning-placeholder");
+  if (isLearning) {
+    forecastPanel.classList.add("compact");
+    forecastPlaceholder.hidden = false;
+  } else {
+    forecastPanel.classList.remove("compact");
+    forecastPlaceholder.hidden = true;
+    const forecast = model.forecastSeries.map((day) => ({ 
+      value: day.generation, 
+      kind: "forecast",
+      date: day.date,
+      confidence: day.confidence
+    }));
+    renderBarChart(document.querySelector("#forecastChart"), forecast, { label: "forecast kWh" });
   }
   
+  // Trend Chart
+  const trend = rollingAverage(model.actualDailySeries.concat(model.estimatedDailySeries), 14)
+    .slice(-90);
   renderLineChart(document.querySelector("#trendChart"), trend, { label: "14-day rolling average" });
 }
 

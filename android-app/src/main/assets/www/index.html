@@ -96,38 +96,35 @@
       <section class="metrics-grid" id="metricsGrid"></section>
 
       <section class="charts-grid">
-        <article class="chart-panel">
+        <article class="chart-panel" id="dailyPanel">
           <div class="section-heading">
             <h2>Daily Generation</h2>
-            <span>actual, estimated, forecast</span>
           </div>
           <canvas id="dailyChart" height="180"></canvas>
         </article>
-        <article class="chart-panel">
+        <article class="chart-panel" id="monthlyPanel">
           <div class="section-heading">
             <h2>Monthly Generation</h2>
-            <span>observed model</span>
+          </div>
+          <div class="learning-placeholder" hidden>
+            <p>Learning Phase</p>
+            <span>Collecting monthly patterns...</span>
           </div>
           <canvas id="monthlyChart" height="180"></canvas>
         </article>
-        <article class="chart-panel">
-          <div class="section-heading">
-            <h2>Lifetime Generation</h2>
-            <span>cumulative production</span>
-          </div>
-          <canvas id="lifetimeChart" height="180"></canvas>
-        </article>
-        <article class="chart-panel">
+        <article class="chart-panel" id="forecastPanel">
           <div class="section-heading">
             <h2>Forecast Chart</h2>
-            <span>next seven modeled days</span>
+          </div>
+          <div class="learning-placeholder" hidden>
+            <p>Learning Phase</p>
+            <span>Insufficient data for prediction...</span>
           </div>
           <canvas id="forecastChart" height="180"></canvas>
         </article>
-        <article class="chart-panel">
+        <article class="chart-panel" id="trendPanel">
           <div class="section-heading">
             <h2>Trend Analysis</h2>
-            <span>rolling behavior</span>
           </div>
           <canvas id="trendChart" height="180"></canvas>
         </article>
