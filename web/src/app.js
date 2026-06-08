@@ -27,6 +27,10 @@ const els = {
   cancelEdit: document.querySelector("#cancelEdit"),
   entryMessage: document.querySelector("#entryMessage"),
   settingsForm: document.querySelector("#settingsForm"),
+  settingsView: document.querySelector("#settingsView"),
+  settingsEdit: document.querySelector("#settingsEdit"),
+  editSettings: document.querySelector("#editSettings"),
+  capacityDisplay: document.querySelector("#capacityDisplay"),
   installationDate: document.querySelector("#installationDate"),
   solarCapacity: document.querySelector("#solarCapacity"),
   solarCapacityUnit: document.querySelector("#solarCapacityUnit"),
@@ -99,6 +103,11 @@ function bindEvents() {
     settings.solarCapacityUnit = els.solarCapacityUnit.value;
     await saveSettings(db, settings);
     await refresh("Settings saved.");
+  });
+
+  els.editSettings.addEventListener("click", () => {
+    els.settingsView.hidden = true;
+    els.settingsEdit.hidden = false;
   });
 
   els.exportData.addEventListener("click", async () => {
@@ -177,6 +186,7 @@ async function refresh(message = "") {
     renderCharts();
     renderQuality();
     renderWarnings();
+    renderSettingsView();
     if (message) els.entryMessage.textContent = message;
   } catch (err) {
     console.error("Refresh failed:", err);
@@ -412,6 +422,18 @@ function renderQuality() {
 function renderWarnings() {
   const d = model.dashboard;
   els.lowGenerationWarning.hidden = !d.lowGenerationDetected;
+}
+
+function renderSettingsView() {
+  const hasCapacity = !!settings.solarCapacity;
+  if (hasCapacity) {
+    els.capacityDisplay.textContent = `${settings.solarCapacity} ${settings.solarCapacityUnit}`;
+    els.settingsView.hidden = false;
+    els.settingsEdit.hidden = true;
+  } else {
+    els.settingsView.hidden = true;
+    els.settingsEdit.hidden = false;
+  }
 }
 
 function resetForm() {

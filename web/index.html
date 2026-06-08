@@ -73,23 +73,29 @@
         </form>
 
         <form id="settingsForm" class="settings-form">
-          <div class="settings-row">
-            <label>
-              <span>Installation year</span>
-              <input id="installationDate" type="number" min="1900" max="2100" placeholder="YYYY">
-            </label>
-            <label>
-              <span>Installed Solar Capacity</span>
-              <div class="capacity-input">
-                <input id="solarCapacity" type="number" min="0" step="0.1" placeholder="Value">
-                <select id="solarCapacityUnit">
-                  <option value="kW">kW</option>
-                  <option value="W">W</option>
-                </select>
-              </div>
-            </label>
+          <div id="settingsView" class="settings-summary" hidden>
+            <p>Solar Capacity: <strong id="capacityDisplay">--</strong></p>
+            <button type="button" class="text-button" id="editSettings">Change</button>
           </div>
-          <button class="secondary" type="submit">Save settings</button>
+          <div id="settingsEdit">
+            <div class="settings-row">
+              <label>
+                <span>Installation year</span>
+                <input id="installationDate" type="number" min="1900" max="2100" placeholder="YYYY">
+              </label>
+              <label>
+                <span>Installed Solar Capacity</span>
+                <div class="capacity-input">
+                  <input id="solarCapacity" type="number" min="0" step="0.1" placeholder="Value">
+                  <select id="solarCapacityUnit">
+                    <option value="kW">kW</option>
+                    <option value="W">W</option>
+                  </select>
+                </div>
+              </label>
+            </div>
+            <button class="secondary" type="submit">Save settings</button>
+          </div>
         </form>
       </section>
 
