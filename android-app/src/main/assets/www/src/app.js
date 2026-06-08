@@ -29,8 +29,8 @@ const els = {
   settingsForm: document.querySelector("#settingsForm"),
   settingsView: document.querySelector("#settingsView"),
   settingsEdit: document.querySelector("#settingsEdit"),
-  editSettings: document.querySelector("#editSettings"),
   capacityDisplay: document.querySelector("#capacityDisplay"),
+  yearDisplay: document.querySelector("#yearDisplay"),
   installationDate: document.querySelector("#installationDate"),
   solarCapacity: document.querySelector("#solarCapacity"),
   solarCapacityUnit: document.querySelector("#solarCapacityUnit"),
@@ -105,9 +105,11 @@ function bindEvents() {
     await refresh("Settings saved.");
   });
 
-  els.editSettings.addEventListener("click", () => {
-    els.settingsView.hidden = true;
-    els.settingsEdit.hidden = false;
+  document.querySelectorAll(".editSettingsBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      els.settingsView.hidden = true;
+      els.settingsEdit.hidden = false;
+    });
   });
 
   els.exportData.addEventListener("click", async () => {
@@ -426,8 +428,11 @@ function renderWarnings() {
 
 function renderSettingsView() {
   const hasCapacity = !!settings.solarCapacity;
-  if (hasCapacity) {
-    els.capacityDisplay.textContent = `${settings.solarCapacity} ${settings.solarCapacityUnit}`;
+  const hasYear = !!settings.installationDate;
+  
+  if (hasCapacity || hasYear) {
+    els.capacityDisplay.textContent = hasCapacity ? `${settings.solarCapacity} ${settings.solarCapacityUnit}` : "--";
+    els.yearDisplay.textContent = hasYear ? settings.installationDate : "--";
     els.settingsView.hidden = false;
     els.settingsEdit.hidden = true;
   } else {
