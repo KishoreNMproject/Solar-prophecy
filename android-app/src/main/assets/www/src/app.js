@@ -50,7 +50,7 @@ const els = {
   forecastList: document.querySelector("#forecastList"),
   forecastConfidence: document.querySelector("#forecastConfidence"),
   qualityWarning: document.querySelector("#qualityWarning"),
-  lowGenerationWarning: document.querySelector("#lowGenerationWarning"),
+  modelStatusIndicator: document.querySelector("#modelStatusIndicator"),
   modelStatus: document.querySelector("#modelStatus"),
   modelStatusStats: document.querySelector("#modelStatusStats"),
   forecastStateText: document.querySelector("#forecastStateText"),
@@ -288,12 +288,16 @@ function renderModelStatus() {
   
   els.forecastStateText.textContent = state.charAt(0).toUpperCase() + state.slice(1);
   
+  const status = q.forecastReliability;
+  const indicator = status === "strong" ? "🟢" : status === "developing" ? "🟡" : "🔴";
+  if (els.modelStatusIndicator) els.modelStatusIndicator.textContent = indicator;
+
   const stats = [
-    ["Raw Observations", q.rawObservationCount],
+    ["Raw Obs.", q.rawObservationCount],
     ["Daily Records", q.dailyClosingRecordCount],
     ["Intraday", q.rawObservationCount - q.dailyClosingRecordCount],
-    ["Missing Days", q.missingDayCount],
-    ["Estimated Days", q.estimatedDayCount]
+    ["Missing", q.missingDayCount],
+    ["Estimated", q.estimatedDayCount]
   ];
 
   els.modelStatusStats.innerHTML = stats
@@ -304,9 +308,8 @@ function renderModelStatus() {
       </div>`)
     .join("");
 
-  const status = q.forecastReliability;
   els.modelStatus.textContent = status === "low" ? "Learning..." : `Model: ${status}`;
-  els.modelStatus.style.color = status === "strong" ? "var(--green)" : status === "developing" ? "var(--amber)" : "var(--muted)";
+  els.modelStatus.style.color = status === "strong" ? "var(--brand)" : status === "developing" ? "var(--amber)" : "var(--muted)";
 }
 
 function renderMetrics() {

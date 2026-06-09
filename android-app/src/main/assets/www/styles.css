@@ -217,6 +217,23 @@ button {
 .secondary { background: var(--glass-tint); color: var(--ink); border: 1px solid var(--line); }
 .glass-button { background: var(--panel-strong); border: 1px solid var(--line); color: var(--brand); margin-top: 8px; }
 
+/* Model Status Refinement */
+.model-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+.status-stat {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  background: var(--glass-tint);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+.status-stat span { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+.status-stat strong { font-size: 1.1rem; color: var(--ink); font-weight: 800; }
+
 /* Metrics & Charts */
 .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
 .metric { min-height: 100px; display: flex; flex-direction: column; justify-content: center; }
