@@ -1,6 +1,6 @@
 import { buildSolarModel } from "./analytics.js";
 import { renderBarChart, renderLineChart } from "./charts.js";
-import { checkForUpdates } from "./updates.js";
+import { checkForUpdates, manualUpdateCheck, openReleaseNotes, CURRENT_VERSION } from "./updates.js";
 import { initTheme, applyTheme, getActiveThemeName } from "./theme.js";
 import {
   deleteReading,
@@ -41,6 +41,10 @@ const els = {
   metricsGrid: document.querySelector("#metricsGrid"),
   themeMode: document.querySelector("#themeMode"),
   activeThemeDisplay: document.querySelector("#activeThemeDisplay"),
+  currentVersionDisplay: document.querySelector("#currentVersionDisplay"),
+  latestVersionDisplay: document.querySelector("#latestVersionDisplay"),
+  manualUpdateCheckBtn: document.querySelector("#manualUpdateCheckBtn"),
+  viewReleaseNotesBtn: document.querySelector("#viewReleaseNotesBtn"),
   readingsTable: document.querySelector("#readingsTable"),
   readingCount: document.querySelector("#readingCount"),
   forecastList: document.querySelector("#forecastList"),
@@ -141,6 +145,21 @@ function bindEvents() {
     els.installationDate.value = settings.installationDate || "";
     els.solarCapacity.value = settings.solarCapacity || "";
     els.solarCapacityUnit.value = settings.solarCapacityUnit || "kW";
+  });
+
+  els.manualUpdateCheckBtn.addEventListener("click", async () => {
+    els.manualUpdateCheckBtn.textContent = "Checking...";
+    els.manualUpdateCheckBtn.disabled = true;
+    const latest = await manualUpdateCheck();
+    if (latest) {
+      els.latestVersionDisplay.textContent = `v${latest}`;
+    }
+    els.manualUpdateCheckBtn.textContent = "Check for Updates";
+    els.manualUpdateCheckBtn.disabled = false;
+  });
+
+  els.viewReleaseNotesBtn.addEventListener("click", () => {
+    openReleaseNotes();
   });
 
   els.exportData.addEventListener("click", async () => {
@@ -465,6 +484,7 @@ function renderSettingsView() {
   els.capacityDisplay.textContent = hasCapacity ? `${settings.solarCapacity} ${settings.solarCapacityUnit}` : "--";
   els.yearDisplay.textContent = hasYear ? settings.installationDate : "--";
   els.activeThemeDisplay.textContent = getActiveThemeName();
+  els.currentVersionDisplay.textContent = `v${CURRENT_VERSION}`;
 
   // First-time setup: show edit form by default, hide edit button
   if (!hasCapacity && !hasYear) {

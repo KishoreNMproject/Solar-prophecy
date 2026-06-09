@@ -1,4 +1,4 @@
-const CURRENT_VERSION = "1.3.7";
+export const CURRENT_VERSION = "1.3.8";
 const GITHUB_REPO = "KishoreNMproject/Solar-prophecy";
 
 let activeUpdateModal = null;
@@ -36,6 +36,39 @@ export async function checkForUpdates() {
   }
 }
 
+export async function manualUpdateCheck() {
+  try {
+    const isAndroid = !!window.SolarAndroid;
+    const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
+    if (!response.ok) throw new Error("Failed to fetch latest release.");
+    const release = await response.json();
+    const latestVersion = release.tag_name.replace(/^v/, "");
+
+    if (isNewerVersion(latestVersion, CURRENT_VERSION)) {
+      showUpdateModal(release, isAndroid);
+    } else {
+      renderGlassModal({
+        icon: "✅",
+        title: "Up to date",
+        subtitle: "Software Status",
+        contentHtml: `<p>You are running the latest version of Solar Prophecy (v${CURRENT_VERSION}).</p>`,
+        actions: [
+          { label: "Close", primary: true, onClick: (modal) => modal.remove() }
+        ]
+      });
+    }
+    return latestVersion;
+  } catch (err) {
+    console.error(err);
+    alert("Failed to check for updates.");
+    return null;
+  }
+}
+
+export function openReleaseNotes() {
+  window.open(`https://github.com/${GITHUB_REPO}/releases`, "_blank");
+}
+
 function isNewerVersion(latest, current) {
   const l = latest.split(".").map(Number);
   const c = current.split(".").map(Number);
@@ -48,13 +81,13 @@ function isNewerVersion(latest, current) {
 
 function showWhatsNew(isAndroid) {
   const highlights = [
+    "Redesigned Soft Sky Light Theme",
+    "Animated Sun/Moon Widget based on Local Time",
+    "Manual Update Checks in Settings",
+    "Unified Glassmorphism Update Modals",
+    "Continuous Day-Night Cycle Interpolation",
     "Adaptive Theme System (Light, Dark, System)",
-    "Dynamic Solar Sky Experience",
-    "Time-based Day/Night cycle support",
-    "Standardized APK naming convention",
-    "Professional OTA Update System",
-    "Smart inverter reset detection",
-    "Meter epoch system"
+    "Professional OTA Update System"
   ];
 
   renderGlassModal({
@@ -168,7 +201,7 @@ window.onInstallFailed = function(errorMsg) {
   });
 };
 
-  function updateModalToFailed(modal, reason) {
+function updateModalToFailed(modal, reason) {
   const actionsContainer = modal.querySelector(".modal-actions");
   actionsContainer.innerHTML = `
     <p style="font-size: 0.9rem; color: var(--rose); margin-bottom: 12px; font-weight: 600;">Update Failed: ${reason || "Unknown error"}</p>
@@ -190,14 +223,10 @@ window.onInstallFailed = function(errorMsg) {
 window.onUpdateDownloadProgress = function(progress, status, error) {
   if (!activeUpdateModal) {
     if (status === 'success' && currentUpdateRelease) {
-      // If modal was hidden, maybe show it again or show a notification toast in web UI?
-      // For now, let's just allow the user to find it again via the update check if they wanted.
-      // But actually, we should probably re-show the modal in 'Ready' state.
       activeUpdateModal = showUpdateModal(currentUpdateRelease, true);
     }
     if (status === 'success') return;
     if (status !== 'downloading') return; 
-    // We only care about progress if the modal is open, or we re-open it.
     return;
   }
 
@@ -259,32 +288,36 @@ function renderGlassModal({ icon, title, subtitle, versionInfo, contentHtml, act
 }
 
 function showAndroidPromotion() {
-  const container = document.querySelector(".shell");
-  if (!container) return;
-
-  const card = document.createElement("div");
-  card.className = "promotion-card";
-  card.innerHTML = `
-    <button class="close-btn">&times;</button>
-    <h3>Get the Android App</h3>
-    <ul>
-      <li>Offline support</li>
-      <li>Faster experience</li>
-      <li>Native Android interface</li>
-      <li>Local data storage</li>
-      <li>OTA updates</li>
-    </ul>
-    <button class="primary" id="promoDownloadBtn" style="margin-top: 8px;">Download Android App</button>
-  `;
-
-  container.prepend(card);
-
-  card.querySelector(".close-btn").addEventListener("click", () => {
-    card.remove();
-    localStorage.setItem("dismissed_android_promotion", "true");
-  });
-
-  card.querySelector("#promoDownloadBtn").addEventListener("click", () => {
-    window.open(`https://github.com/${GITHUB_REPO}/releases/latest`, "_blank");
+  renderGlassModal({
+    icon: "📱",
+    title: "Get the Android App",
+    subtitle: "Benefits",
+    contentHtml: `
+      <ul>
+        <li>Offline support</li>
+        <li>Faster experience</li>
+        <li>Native Android interface</li>
+        <li>Local data storage</li>
+        <li>OTA updates</li>
+      </ul>
+    `,
+    actions: [
+      { 
+        label: "Download Android App", 
+        primary: true, 
+        onClick: (modal) => {
+          window.open(`https://github.com/${GITHUB_REPO}/releases/latest`, "_blank");
+          modal.remove();
+          localStorage.setItem("dismissed_android_promotion", "true");
+        } 
+      },
+      { 
+        label: "Dismiss", 
+        onClick: (modal) => {
+          modal.remove();
+          localStorage.setItem("dismissed_android_promotion", "true");
+        } 
+      }
+    ]
   });
 }

@@ -61,60 +61,62 @@ function updateSolarSky() {
   const now = new Date();
   const mins = now.getHours() * 60 + now.getMinutes();
   const body = document.body;
-  const celestial = document.querySelector(".celestial-object");
   const html = document.documentElement;
+  const widget = document.querySelector("#celestialWidget");
 
-  // Determine Cycle Phase
+  // Time-based Celestial Widget colors
+  let widgetColor = "";
+  let widgetGlow = "";
+  
+  if (mins >= 300 && mins < 600) { // Morning
+    widgetColor = "#fcd34d"; // Warm yellow
+    widgetGlow = "rgba(252, 211, 77, 0.6)";
+  } else if (mins >= 600 && mins < 960) { // Midday
+    widgetColor = "#fbbf24"; // Bright gold
+    widgetGlow = "rgba(251, 191, 36, 0.8)";
+  } else if (mins >= 960 && mins < 1140) { // Evening
+    widgetColor = "#f97316"; // Orange
+    widgetGlow = "rgba(249, 115, 22, 0.6)";
+  } else { // Night
+    widgetColor = "#cbd5e1"; // Silver gray
+    widgetGlow = "rgba(203, 213, 225, 0.4)";
+  }
+
+  if (widget) {
+    widget.style.background = widgetColor;
+    widget.style.boxShadow = `0 0 20px ${widgetGlow}`;
+  }
+
+  // Determine Cycle Phase for Auto Mode
   let phase = "night";
   let isLight = false;
 
-  // 04:00 - 08:00 Dawn
   if (mins >= 240 && mins < 480) {
     phase = "dawn";
-    isLight = false; // Dawn is dark-ish
-  } 
-  // 08:00 - 16:00 Day
-  else if (mins >= 480 && mins < 960) {
+    isLight = false;
+  } else if (mins >= 480 && mins < 960) {
     phase = "day";
     isLight = true;
-  }
-  // 16:00 - 19:00 Evening
-  else if (mins >= 960 && mins < 1140) {
+  } else if (mins >= 960 && mins < 1140) {
     phase = "evening";
-    isLight = false; // Evening is dark
-  }
-  // 19:00 - 04:00 Night
-  else {
+    isLight = false;
+  } else {
     phase = "night";
     isLight = false;
   }
 
-  // Remove old classes and add new phase
-  body.classList.remove("cycle-dawn", "cycle-day", "cycle-evening", "cycle-night");
-  body.classList.add(`cycle-${phase}`);
-  html.setAttribute("data-theme", isLight ? "light" : "dark");
-  
-  // Set theme color from CSS var --bg
-  setTimeout(() => {
-    const bg = getComputedStyle(document.body).getPropertyValue("--bg").trim();
-    if (bg) updateMetaThemeColor(bg);
-  }, 50);
-
-  // Calculate position (0% - 100% horizontally)
-  let progress = 0;
-  if (mins >= 300 && mins <= 1140) { // 5am to 7pm (14 hours)
-    progress = ((mins - 300) / 840) * 100;
-  } else {
-    // Night path
-    let nightMins = mins > 1140 ? mins - 1140 : mins + 300;
-    progress = (nightMins / 600) * 100;
-  }
-
-  if (celestial) {
-    celestial.style.left = `${progress}%`;
-    // Parabolic arc for height: height = baseline + sin(prog) * amplitude
-    const arcHeight = Math.sin((progress / 100) * Math.PI) * 45;
-    celestial.style.top = `${60 - arcHeight}%`;
+  const mode = localStorage.getItem("themeMode") || "system";
+  if (mode === "auto") {
+    // Remove old classes and add new phase
+    body.classList.remove("cycle-dawn", "cycle-day", "cycle-evening", "cycle-night");
+    body.classList.add(`cycle-${phase}`);
+    html.setAttribute("data-theme", isLight ? "light" : "dark");
+    
+    // Set theme color from CSS var --bg
+    setTimeout(() => {
+      const bg = getComputedStyle(document.body).getPropertyValue("--bg").trim();
+      if (bg) updateMetaThemeColor(bg);
+    }, 50);
   }
 }
 

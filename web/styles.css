@@ -40,25 +40,25 @@
 
 [data-theme="light"] {
   color-scheme: light;
-  --bg: #f0f7ff;
-  --ink: #0a192f;
-  --muted: #4a5568;
-  --brand: #2b6cb0;
-  --brand-glow: rgba(43, 108, 176, 0.2);
+  --bg: #eaf4ff;
+  --ink: #1a2b4a;
+  --muted: #445b7c;
+  --brand: #2563eb;
+  --brand-glow: rgba(37, 99, 235, 0.2);
   
-  --panel: rgba(255, 255, 255, 0.8);
-  --panel-strong: rgba(255, 255, 255, 0.95);
-  --line: rgba(0, 0, 0, 0.06);
-  --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  --panel: #f7fbff;
+  --panel-strong: #edf6ff;
+  --line: #c7dcf5;
+  --shadow: 0 4px 20px rgba(26, 43, 74, 0.05);
   --surface: #ffffff;
   
-  --glass-tint: rgba(0, 0, 0, 0.01);
-  --chart-grid: rgba(0, 0, 0, 0.04);
-  --chart-text: #4a5568;
-  --chart-tooltip-bg: #ffffff;
-  --chart-tooltip-border: rgba(0, 0, 0, 0.1);
+  --glass-tint: rgba(255, 255, 255, 0.5);
+  --chart-grid: rgba(26, 43, 74, 0.06);
+  --chart-text: #445b7c;
+  --chart-tooltip-bg: #f7fbff;
+  --chart-tooltip-border: #c7dcf5;
   
-  --sky-gradient: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 100%);
+  --sky-gradient: linear-gradient(180deg, #dbeafe 0%, #eaf4ff 100%);
 }
 
 /* Day-Night Smooth Cycle Classes (applied to body via JS) */
@@ -105,25 +105,15 @@ body {
   padding: env(safe-area-inset-top, 20px) 0 60px;
 }
 
-/* Solar Sky */
-.solar-sky {
-  position: fixed; inset: 0; z-index: 0;
-  background: var(--sky-gradient);
-  opacity: 0.25; pointer-events: none;
-  transition: background 2s ease;
-}
-
-.celestial-object {
+/* Celestial Widget */
+.celestial-widget {
   position: absolute;
-  width: 60px; height: 60px;
+  top: 20px; left: 20px;
+  width: 32px; height: 32px;
   border-radius: 50%;
-  background: var(--celestial-color);
-  box-shadow: 0 0 40px var(--celestial-glow);
-  top: 20%; left: -100px;
-  transition: all 3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: none; /* Only show in cycle mode */
+  transition: all 1s ease-in-out;
+  pointer-events: none;
 }
-body.theme-auto .celestial-object { display: block; }
 
 .ambient-layer {
   position: fixed; inset: 0; z-index: -1;

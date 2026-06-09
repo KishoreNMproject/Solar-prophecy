@@ -11,9 +11,6 @@
   <body>
     <main class="shell">
       <div class="ambient-layer" aria-hidden="true"></div>
-      <div id="solarSky" class="solar-sky" aria-hidden="true">
-        <div class="celestial-object"></div>
-      </div>
     <header class="topbar">
       <div class="brand">
         <p class="eyebrow">Solar Analytics</p>
@@ -27,7 +24,8 @@
       </div>
     </header>
 
-      <section class="gauge-container">
+      <section class="gauge-container" style="position: relative;">
+        <div id="celestialWidget" class="celestial-widget" aria-hidden="true"></div>
         <div class="gauge-wrapper">
           <svg class="gauge-svg" viewBox="0 0 200 200">
             <circle class="gauge-track" cx="100" cy="100" r="90"></circle>
@@ -120,6 +118,18 @@
               </label>
             </div>
             
+            <div class="section-label" style="margin-top: 16px;">Software Updates</div>
+            <div class="summary-group">
+              <p>Current Version: <strong id="currentVersionDisplay">--</strong></p>
+            </div>
+            <div class="summary-group" style="margin-bottom: 8px;">
+              <p>Latest Available: <strong id="latestVersionDisplay">--</strong></p>
+            </div>
+            <div class="settings-row">
+              <button class="secondary" type="button" id="manualUpdateCheckBtn">Check for Updates</button>
+              <button class="secondary" type="button" id="viewReleaseNotesBtn">View Release Notes</button>
+            </div>
+
             <div style="display: flex; gap: 8px; margin-top: 16px;">
               <button class="primary" type="submit" style="flex: 1;">Save Settings</button>
               <button class="secondary" type="button" id="cancelSettings" style="flex: 1;">Cancel</button>
