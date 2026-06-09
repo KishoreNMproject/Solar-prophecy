@@ -1,4 +1,4 @@
-const CURRENT_VERSION = "1.3.1";
+const CURRENT_VERSION = "1.3.2";
 const GITHUB_REPO = "KishoreNMproject/Solar-prophecy";
 
 let activeUpdateModal = null;
