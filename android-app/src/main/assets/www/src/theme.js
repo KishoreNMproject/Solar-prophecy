@@ -1,16 +1,16 @@
 /**
- * Theme and Solar Sky Engine for Solar Prophecy
+ * Stabilized Theme and Solar Sky Engine for Solar Prophecy v1.3.4
  */
 
 export function initTheme(settings) {
   applyTheme(settings.themeMode || "system");
 
-  // If auto mode, update every minute
+  // Continuous interpolation for auto mode
   setInterval(() => {
     if (localStorage.getItem("themeMode") === "auto") {
       updateSolarSky();
     }
-  }, 60000);
+  }, 30000); // Update every 30s for smoother sky transitions
 
   // Watch for system theme changes
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
@@ -25,8 +25,8 @@ export function applyTheme(mode) {
   const body = document.body;
   const html = document.documentElement;
 
-  // Reset classes
-  body.classList.remove("sky-morning", "sky-day", "sky-evening", "sky-night");
+  // Cleanup
+  body.classList.remove("cycle-dawn", "cycle-day", "cycle-evening", "cycle-night", "theme-auto");
   html.removeAttribute("data-theme");
 
   if (mode === "light") {
@@ -37,69 +37,76 @@ export function applyTheme(mode) {
     const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     html.setAttribute("data-theme", isDark ? "dark" : "light");
   } else if (mode === "auto") {
+    body.classList.add("theme-auto");
     updateSolarSky();
   }
   
-  // Dispatch event for charts to re-render if needed
   window.dispatchEvent(new CustomEvent("themeChanged", { detail: { mode } }));
 }
 
 function updateSolarSky() {
   const now = new Date();
-  const hour = now.getHours();
+  const mins = now.getHours() * 60 + now.getMinutes();
   const body = document.body;
   const celestial = document.querySelector(".celestial-object");
   const html = document.documentElement;
 
-  let theme = "night";
+  // Determine Cycle Phase
+  let phase = "night";
   let isLight = false;
 
-  if (hour >= 5 && hour < 8) {
-    theme = "morning";
-    isLight = true;
-  } else if (hour >= 8 && hour < 16) {
-    theme = "day";
-    isLight = true;
-  } else if (hour >= 16 && hour < 19) {
-    theme = "evening";
+  // 04:00 - 08:00 Dawn
+  if (mins >= 240 && mins < 480) {
+    phase = "dawn";
+    isLight = false; // Dawn is dark-ish
+  } 
+  // 08:00 - 16:00 Day
+  else if (mins >= 480 && mins < 960) {
+    phase = "day";
     isLight = true;
   }
+  // 16:00 - 19:00 Evening
+  else if (mins >= 960 && mins < 1140) {
+    phase = "evening";
+    isLight = true; // Evening is still light-ish
+  }
+  // 19:00 - 04:00 Night
+  else {
+    phase = "night";
+    isLight = false;
+  }
 
-  body.classList.add(`sky-${theme}`);
+  // Remove old classes and add new phase
+  body.classList.remove("cycle-dawn", "cycle-day", "cycle-evening", "cycle-night");
+  body.classList.add(`cycle-${phase}`);
   html.setAttribute("data-theme", isLight ? "light" : "dark");
 
-  // Position Sun/Moon (0% to 100% across the sky)
-  // Simplified: 5am-7pm is "daylight" arc for Sun
-  // 7pm-5am is "night" arc for Moon
+  // Calculate position (0% - 100% horizontally)
   let progress = 0;
-  if (isLight) {
-    const start = 5 * 60; // 5am in mins
-    const end = 19 * 60; // 7pm in mins
-    const current = hour * 60 + now.getMinutes();
-    progress = ((current - start) / (end - start)) * 100;
+  if (mins >= 300 && mins <= 1140) { // 5am to 7pm (14 hours)
+    progress = ((mins - 300) / 840) * 100;
   } else {
-    // Night arc
-    const current = hour * 60 + now.getMinutes();
-    let adjusted = current >= 1140 ? current - 1140 : current + 300; // 7pm to 5am
-    progress = (adjusted / 600) * 100;
+    // Night path
+    let nightMins = mins > 1140 ? mins - 1140 : mins + 300;
+    progress = (nightMins / 600) * 100;
   }
 
   if (celestial) {
     celestial.style.left = `${progress}%`;
-    // Parabolic arc for height
-    const height = 15 + Math.sin((progress / 100) * Math.PI) * 40;
-    celestial.style.top = `${100 - height}%`;
+    // Parabolic arc for height: height = baseline + sin(prog) * amplitude
+    const arcHeight = Math.sin((progress / 100) * Math.PI) * 45;
+    celestial.style.top = `${60 - arcHeight}%`;
   }
 }
 
 export function getActiveThemeName() {
   const mode = localStorage.getItem("themeMode") || "system";
   if (mode === "auto") {
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 8) return "Morning";
-    if (hour >= 8 && hour < 16) return "Day";
-    if (hour >= 16 && hour < 19) return "Evening";
-    return "Night";
+    const mins = new Date().getHours() * 60 + new Date().getMinutes();
+    if (mins >= 240 && mins < 480) return "Dawn (Adaptive)";
+    if (mins >= 480 && mins < 960) return "Day (Adaptive)";
+    if (mins >= 960 && mins < 1140) return "Evening (Adaptive)";
+    return "Night (Adaptive)";
   }
   if (mode === "system") {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "Dark (System)" : "Light (System)";
