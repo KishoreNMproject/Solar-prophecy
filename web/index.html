@@ -11,6 +11,9 @@
   <body>
     <main class="shell">
       <div class="ambient-layer" aria-hidden="true"></div>
+      <div id="solarSky" class="solar-sky" aria-hidden="true">
+        <div class="celestial-object"></div>
+      </div>
     <header class="topbar">
       <div class="brand">
         <p class="eyebrow">Solar Analytics</p>
@@ -80,9 +83,13 @@
             <div class="summary-group">
               <p>Installation Year: <strong id="yearDisplay">--</strong></p>
             </div>
+            <div class="summary-group">
+              <p>Theme: <strong id="activeThemeDisplay">--</strong></p>
+            </div>
             <button type="button" class="glass-button" id="editSettingsBtn" style="margin-top: 12px;">Edit Settings</button>
           </div>
           <div id="settingsEdit" hidden>
+            <div class="section-label">System Settings</div>
             <div class="settings-row">
               <label>
                 <span>Installation year</span>
@@ -99,7 +106,21 @@
                 </div>
               </label>
             </div>
-            <div style="display: flex; gap: 8px; margin-top: 12px;">
+
+            <div class="section-label" style="margin-top: 16px;">Appearance</div>
+            <div class="settings-row full-width">
+              <label>
+                <span>Theme Mode</span>
+                <select id="themeMode" class="theme-select">
+                  <option value="light">☀ Light Mode</option>
+                  <option value="dark">🌙 Dark Mode</option>
+                  <option value="system">📱 Follow Device</option>
+                  <option value="auto">🌅 Follow Day/Night</option>
+                </select>
+              </label>
+            </div>
+            
+            <div style="display: flex; gap: 8px; margin-top: 16px;">
               <button class="primary" type="submit" style="flex: 1;">Save Settings</button>
               <button class="secondary" type="button" id="cancelSettings" style="flex: 1;">Cancel</button>
             </div>

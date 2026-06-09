@@ -1,28 +1,41 @@
-const COLORS = {
-  actual: "#2ecc71",
-  estimated: "#f39c12",
-  forecast: "#3498db",
-  grid: "rgba(255, 255, 255, 0.05)",
-  text: "#8ca5a0",
-  trend: "#9b59b6",
-  tooltipBg: "rgba(20, 26, 25, 0.95)",
-  tooltipBorder: "rgba(255, 255, 255, 0.1)"
-};
+function getThemeColors() {
+  const styles = getComputedStyle(document.documentElement);
+  return {
+    actual: "#2ecc71",
+    estimated: "#f39c12",
+    forecast: "#3498db",
+    grid: styles.getPropertyValue("--chart-grid").trim() || "rgba(255, 255, 255, 0.05)",
+    text: styles.getPropertyValue("--chart-text").trim() || "#8ca5a0",
+    trend: "#9b59b6",
+    tooltipBg: styles.getPropertyValue("--chart-tooltip-bg").trim() || "rgba(20, 26, 25, 0.95)",
+    tooltipBorder: styles.getPropertyValue("--chart-tooltip-border").trim() || "rgba(255, 255, 255, 0.1)",
+    ink: styles.getPropertyValue("--ink").trim() || "#fff"
+  };
+}
 
 // Store chart data for interaction
 const chartRegistry = new Map();
+
+// Listen for theme changes to re-render all charts
+window.addEventListener("themeChanged", () => {
+  chartRegistry.forEach((entry, canvas) => {
+    if (entry.type === "bar") renderBarChart(canvas, entry.points, entry.options);
+    else renderLineChart(canvas, entry.points, entry.options);
+  });
+});
 
 export function renderBarChart(canvas, points, options = {}) {
   chartRegistry.set(canvas, { type: "bar", points, options });
   const ctx = setup(canvas);
   const box = chartBox(canvas);
+  const COLORS = getThemeColors();
   
   const interaction = chartRegistry.get(canvas).interaction;
   const hoverIndex = interaction ? interaction.index : -1;
 
   drawAxes(ctx, box, points, options);
   
-  if (points.length < 2) {
+  if (!points || points.length < 2) {
     return drawEmpty(ctx, canvas, "Learning from observations...");
   }
 
@@ -44,7 +57,7 @@ export function renderBarChart(canvas, points, options = {}) {
     // Value labels for compact mode if space permits or if hovered
     if ((points.length < 15 || index === hoverIndex) && point.value > 0) {
       ctx.globalAlpha = 1;
-      ctx.fillStyle = "#fff";
+      ctx.fillStyle = COLORS.ink;
       ctx.textAlign = "center";
       ctx.font = "800 9px Inter, sans-serif";
       ctx.fillText(point.value.toFixed(1), x + barWidth / 2, y - 4);
@@ -66,13 +79,14 @@ export function renderLineChart(canvas, points, options = {}) {
   chartRegistry.set(canvas, { type: "line", points, options });
   const ctx = setup(canvas);
   const box = chartBox(canvas);
+  const COLORS = getThemeColors();
   
   const interaction = chartRegistry.get(canvas).interaction;
   const hoverIndex = interaction ? interaction.index : -1;
 
   drawAxes(ctx, box, points, options);
   
-  if (points.length < 2) {
+  if (!points || points.length < 2) {
     return drawEmpty(ctx, canvas, "More data needed for trends");
   }
 
@@ -116,7 +130,7 @@ export function renderLineChart(canvas, points, options = {}) {
       ctx.arc(pos.x, pos.y, isHovered ? 6 : 4, 0, Math.PI * 2);
       ctx.fill();
       if (isHovered) {
-        ctx.strokeStyle = "#fff";
+        ctx.strokeStyle = COLORS.ink;
         ctx.lineWidth = 2;
         ctx.stroke();
       }
@@ -206,13 +220,14 @@ function chartBox(canvas) {
 }
 
 function drawAxes(ctx, box, points, options) {
+  const COLORS = getThemeColors();
   const rawMax = points && points.length > 0 ? Math.max(...points.map((p) => p.value), 0) : 10;
   const max = rawMax > 0 ? rawMax : 10;
   
   ctx.strokeStyle = COLORS.grid;
   ctx.lineWidth = 1;
   ctx.textAlign = "right";
-  ctx.fillStyle = "#fff"; // High contrast for labels
+  ctx.fillStyle = COLORS.ink;
   ctx.font = "700 9px Inter, sans-serif";
 
   // Y-axis grid and labels
@@ -259,7 +274,8 @@ function drawAxes(ctx, box, points, options) {
 }
 
 function drawEmpty(ctx, canvas, text) {
-  ctx.fillStyle = "#fff";
+  const COLORS = getThemeColors();
+  ctx.fillStyle = COLORS.ink;
   ctx.textAlign = "center";
   ctx.font = "600 12px Inter, sans-serif";
   const lines = text.split("\n");
@@ -271,6 +287,7 @@ function drawEmpty(ctx, canvas, text) {
 }
 
 function drawTitle(ctx, text, box) {
+  const COLORS = getThemeColors();
   ctx.fillStyle = COLORS.text;
   ctx.textAlign = "left";
   ctx.font = "600 10px Inter, sans-serif";
@@ -278,6 +295,7 @@ function drawTitle(ctx, text, box) {
 }
 
 function drawLegend(ctx, canvas, kinds) {
+  const COLORS = getThemeColors();
   const width = canvas.getBoundingClientRect().width || 320;
   let x = width - 160;
   const y = 14;
@@ -292,6 +310,7 @@ function drawLegend(ctx, canvas, kinds) {
 }
 
 function drawTooltip(ctx, canvas, box, point, interaction) {
+  const COLORS = getThemeColors();
   const { x, y } = interaction;
   const padding = 8;
   const lineHeight = 14;
@@ -313,8 +332,8 @@ function drawTooltip(ctx, canvas, box, point, interaction) {
   if (tx + maxWidth > canvas.clientWidth) tx = x - maxWidth - 10;
   if (ty < 0) ty = y + 10;
   
-  ctx.fillStyle = COLORS.tooltipBg;
-  ctx.strokeStyle = COLORS.tooltipBorder;
+  ctx.fillStyle = COLORS.chartTooltipBg;
+  ctx.strokeStyle = COLORS.chartTooltipBorder;
   ctx.lineWidth = 1;
   
   // Draw tooltip box
@@ -324,10 +343,9 @@ function drawTooltip(ctx, canvas, box, point, interaction) {
   ctx.stroke();
   
   // Draw text
-  ctx.fillStyle = "#fff";
+  ctx.fillStyle = COLORS.ink;
   ctx.textAlign = "left";
   lines.forEach((line, i) => {
     ctx.fillText(line, tx + padding, ty + padding + 10 + i * lineHeight);
   });
 }
-

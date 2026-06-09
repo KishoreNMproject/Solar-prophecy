@@ -1,4 +1,4 @@
-const CURRENT_VERSION = "1.3.2";
+const CURRENT_VERSION = "1.3.3";
 const GITHUB_REPO = "KishoreNMproject/Solar-prophecy";
 
 let activeUpdateModal = null;
@@ -48,13 +48,13 @@ function isNewerVersion(latest, current) {
 
 function showWhatsNew(isAndroid) {
   const highlights = [
+    "Adaptive Theme System (Light, Dark, System)",
+    "Dynamic Solar Sky Experience",
+    "Time-based Day/Night cycle support",
+    "Standardized APK naming convention",
+    "Professional OTA Update System",
     "Smart inverter reset detection",
-    "Meter epoch system",
-    "Virtual cumulative generation tracking",
-    "Production preservation after resets",
-    "Native OTA update support",
-    "Improved Android experience",
-    "GitHub release integration"
+    "Meter epoch system"
   ];
 
   renderGlassModal({

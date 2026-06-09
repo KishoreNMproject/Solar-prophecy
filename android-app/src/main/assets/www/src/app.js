@@ -1,6 +1,7 @@
 import { buildSolarModel } from "./analytics.js";
 import { renderBarChart, renderLineChart } from "./charts.js";
 import { checkForUpdates } from "./updates.js";
+import { initTheme, applyTheme, getActiveThemeName } from "./theme.js";
 import {
   deleteReading,
   exportBackup,
@@ -38,6 +39,8 @@ const els = {
   solarCapacity: document.querySelector("#solarCapacity"),
   solarCapacityUnit: document.querySelector("#solarCapacityUnit"),
   metricsGrid: document.querySelector("#metricsGrid"),
+  themeMode: document.querySelector("#themeMode"),
+  activeThemeDisplay: document.querySelector("#activeThemeDisplay"),
   readingsTable: document.querySelector("#readingsTable"),
   readingCount: document.querySelector("#readingCount"),
   forecastList: document.querySelector("#forecastList"),
@@ -62,11 +65,13 @@ async function init() {
   db = await openDatabase();
   readings = await getReadings(db);
   settings = await getSettings(db);
+  initTheme(settings);
   els.readingTimestamp.value = localDateTimeValue(new Date());
   setCustomTimestampMode(false);
   els.installationDate.value = settings.installationDate || "";
   els.solarCapacity.value = settings.solarCapacity || "";
   els.solarCapacityUnit.value = settings.solarCapacityUnit || "kW";
+  els.themeMode.value = settings.themeMode || "system";
   bindEvents();
   await refresh();
   checkForUpdates();
@@ -118,6 +123,8 @@ function bindEvents() {
     settings.installationDate = els.installationDate.value;
     settings.solarCapacity = els.solarCapacity.value;
     settings.solarCapacityUnit = els.solarCapacityUnit.value;
+    settings.themeMode = els.themeMode.value;
+    applyTheme(settings.themeMode);
     await saveSettings(db, settings);
     await refresh("Settings saved.");
   });
@@ -457,6 +464,7 @@ function renderSettingsView() {
   // Always keep the view summary updated
   els.capacityDisplay.textContent = hasCapacity ? `${settings.solarCapacity} ${settings.solarCapacityUnit}` : "--";
   els.yearDisplay.textContent = hasYear ? settings.installationDate : "--";
+  els.activeThemeDisplay.textContent = getActiveThemeName();
 
   // First-time setup: show edit form by default, hide edit button
   if (!hasCapacity && !hasYear) {
