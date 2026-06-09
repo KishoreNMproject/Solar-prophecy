@@ -152,8 +152,11 @@
       <section id="qualityWarning" class="warning" hidden></section>
 
       <section class="model-status-panel">
-        <div class="section-heading">
-          <h2>Model Status</h2>
+        <div class="model-status-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h2>Model Status</h2>
+            <div id="forecastStateDot" class="status-dot"></div>
+          </div>
           <span id="forecastStateText">Learning</span>
         </div>
         <div class="status-stats" id="modelStatusStats">

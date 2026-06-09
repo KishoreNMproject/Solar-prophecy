@@ -179,6 +179,17 @@ body {
   transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
 }
 
+.model-status-panel { margin-bottom: 20px; }
+.model-status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.model-status-header h2 { margin: 0; font-size: 1rem; font-weight: 800; color: var(--ink); }
+.model-status-header #forecastStateText { font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+.status-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.status-stat { display: flex; flex-direction: column; }
+.status-stat span { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.status-stat strong { font-size: 1.2rem; font-weight: 800; color: var(--ink); }
+
 .reading-form { display: flex; flex-direction: column; gap: 16px; }
 .section-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand); margin-bottom: 12px; }
 

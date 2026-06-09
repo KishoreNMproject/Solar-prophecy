@@ -288,6 +288,13 @@ function renderModelStatus() {
   
   els.forecastStateText.textContent = state.charAt(0).toUpperCase() + state.slice(1);
   
+  const dot = document.getElementById("forecastStateDot");
+  if (dot) {
+    if (state === "learning") dot.style.background = "var(--rose)";
+    else if (state === "limited") dot.style.background = "var(--amber)";
+    else dot.style.background = "var(--green)";
+  }
+  
   const stats = [
     ["Raw Observations", q.rawObservationCount],
     ["Daily Records", q.dailyClosingRecordCount],
@@ -305,8 +312,10 @@ function renderModelStatus() {
     .join("");
 
   const status = q.forecastReliability;
-  els.modelStatus.textContent = status === "low" ? "Learning..." : `Model: ${status}`;
-  els.modelStatus.style.color = status === "strong" ? "var(--green)" : status === "developing" ? "var(--amber)" : "var(--muted)";
+  if (els.modelStatus) {
+    els.modelStatus.textContent = status === "low" ? "Learning..." : `Model: ${status}`;
+    els.modelStatus.style.color = status === "strong" ? "var(--green)" : status === "developing" ? "var(--amber)" : "var(--muted)";
+  }
 }
 
 function renderMetrics() {
