@@ -30,8 +30,10 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Timer;
 import java.util.TimerTask;
+import android.util.Log;
 
 public class MainActivity extends Activity {
+    private static final String TAG = "SolarProphecyOTA";
     private static final int CREATE_FILE_REQUEST_CODE = 1;
     private static final int FILE_CHOOSER_REQUEST_CODE = 2;
     private WebView webView;
@@ -225,6 +227,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void startUpdateDownload(String url, String versionName) {
+            Log.i(TAG, "Download started for version: " + versionName + " from URL: " + url);
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
             request.setTitle("Solar Prophecy Update");
             request.setDescription("Downloading version " + versionName);
@@ -242,16 +245,36 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void installUpdate(String versionName) {
+            Log.i(TAG, "Install button pressed for version: " + versionName);
             File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "SolarProphecy/SolarProphecy-" + versionName + ".apk");
             if (file.exists()) {
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                Uri apkUri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", file);
-                intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    Uri apkUri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", file);
+                    Log.i(TAG, "APK URI generated: " + apkUri.toString());
+                    intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    Log.i(TAG, "Install intent launched");
+                    startActivity(intent);
+                } catch (Exception e) {
+                    Log.e(TAG, "Install launch failed: " + e.getMessage(), e);
+                    runOnUiThread(() -> webView.evaluateJavascript("window.onInstallFailed('" + e.getMessage().replace("'", "\\'") + "')", null));
+                }
+            } else {
+                Log.e(TAG, "Update file not found at: " + file.getAbsolutePath());
+                runOnUiThread(() -> webView.evaluateJavascript("window.onInstallFailed('File not found')", null));
+            }
+        }
+
+        @JavascriptInterface
+        public void openDownloadsFolder() {
+            try {
+                Intent intent = new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
-            } else {
-                Toast.makeText(MainActivity.this, "Update file not found", Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to open downloads folder: " + e.getMessage());
             }
         }
     }

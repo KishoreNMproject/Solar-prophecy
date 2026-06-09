@@ -129,7 +129,7 @@ function updateModalToDownloading(modal) {
 function updateModalToReady(modal, release) {
   const actionsContainer = modal.querySelector(".modal-actions");
   actionsContainer.innerHTML = `
-    <p style="font-size: 0.9rem; color: var(--green); margin-bottom: 12px; font-weight: 600;">Update Ready: Solar Prophecy ${release.tag_name} downloaded.</p>
+    <p style="font-size: 0.9rem; color: var(--green); margin-bottom: 12px; font-weight: 600;">Update ready to install</p>
     <button class="primary" id="otaInstallBtn">Install Now</button>
     <button class="secondary" id="otaLaterBtn">Later</button>
   `;
@@ -144,7 +144,31 @@ function updateModalToReady(modal, release) {
   });
 }
 
-function updateModalToFailed(modal, reason) {
+window.onInstallFailed = function(errorMsg) {
+  if (!activeUpdateModal) return;
+  const actionsContainer = activeUpdateModal.querySelector(".modal-actions");
+
+  let fallbackHtml = `
+    <p style="font-size: 0.9rem; color: var(--rose); margin-bottom: 12px; font-weight: 600;">Install failed: ${errorMsg}</p>
+    <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 12px;">Ensure 'Install Unknown Apps' permission is granted for Solar Prophecy.</p>
+    <button class="primary" id="otaOpenDownloadsBtn">Open Download Folder</button>
+    <button class="secondary" id="otaCloseBtn">Close</button>
+  `;
+  actionsContainer.innerHTML = fallbackHtml;
+
+  activeUpdateModal.querySelector("#otaOpenDownloadsBtn").addEventListener("click", () => {
+    if (window.SolarAndroid && window.SolarAndroid.openDownloadsFolder) {
+       window.SolarAndroid.openDownloadsFolder();
+    }
+  });
+
+  activeUpdateModal.querySelector("#otaCloseBtn").addEventListener("click", () => {
+    activeUpdateModal.remove();
+    activeUpdateModal = null;
+  });
+};
+
+  function updateModalToFailed(modal, reason) {
   const actionsContainer = modal.querySelector(".modal-actions");
   actionsContainer.innerHTML = `
     <p style="font-size: 0.9rem; color: var(--rose); margin-bottom: 12px; font-weight: 600;">Update Failed: ${reason || "Unknown error"}</p>
