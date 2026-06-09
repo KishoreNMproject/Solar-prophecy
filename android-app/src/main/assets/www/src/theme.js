@@ -31,17 +31,30 @@ export function applyTheme(mode) {
 
   if (mode === "light") {
     html.setAttribute("data-theme", "light");
+    updateMetaThemeColor("#f0f7ff");
   } else if (mode === "dark") {
     html.setAttribute("data-theme", "dark");
+    updateMetaThemeColor("#050b1a");
   } else if (mode === "system") {
     const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     html.setAttribute("data-theme", isDark ? "dark" : "light");
+    updateMetaThemeColor(isDark ? "#050b1a" : "#f0f7ff");
   } else if (mode === "auto") {
     body.classList.add("theme-auto");
     updateSolarSky();
   }
   
   window.dispatchEvent(new CustomEvent("themeChanged", { detail: { mode } }));
+}
+
+function updateMetaThemeColor(color) {
+  let metaThemeColor = document.querySelector("meta[name=theme-color]");
+  if (!metaThemeColor) {
+    metaThemeColor = document.createElement("meta");
+    metaThemeColor.name = "theme-color";
+    document.head.appendChild(metaThemeColor);
+  }
+  metaThemeColor.content = color;
 }
 
 function updateSolarSky() {
@@ -68,7 +81,7 @@ function updateSolarSky() {
   // 16:00 - 19:00 Evening
   else if (mins >= 960 && mins < 1140) {
     phase = "evening";
-    isLight = true; // Evening is still light-ish
+    isLight = false; // Evening is dark
   }
   // 19:00 - 04:00 Night
   else {
@@ -80,6 +93,12 @@ function updateSolarSky() {
   body.classList.remove("cycle-dawn", "cycle-day", "cycle-evening", "cycle-night");
   body.classList.add(`cycle-${phase}`);
   html.setAttribute("data-theme", isLight ? "light" : "dark");
+  
+  // Set theme color from CSS var --bg
+  setTimeout(() => {
+    const bg = getComputedStyle(document.body).getPropertyValue("--bg").trim();
+    if (bg) updateMetaThemeColor(bg);
+  }, 50);
 
   // Calculate position (0% - 100% horizontally)
   let progress = 0;
