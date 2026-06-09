@@ -31,6 +31,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Timer;
 import java.util.TimerTask;
 import android.util.Log;
+import android.graphics.Color;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.View;
 
 public class MainActivity extends Activity {
     private static final String TAG = "SolarProphecyOTA";
@@ -212,6 +216,36 @@ public class MainActivity extends Activity {
     };
 
     public class SolarAndroidBridge {
+        @JavascriptInterface
+        public void setSystemColors(String colorHex, boolean isLightText) {
+            runOnUiThread(() -> {
+                try {
+                    int color = Color.parseColor(colorHex);
+                    Window window = getWindow();
+                    window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                    window.setStatusBarColor(color);
+                    window.setNavigationBarColor(color);
+                    
+                    View decorView = window.getDecorView();
+                    int flags = decorView.getSystemUiVisibility();
+                    if (isLightText) {
+                        flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                        }
+                    } else {
+                        flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                        }
+                    }
+                    decorView.setSystemUiVisibility(flags);
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to set system colors", e);
+                }
+            });
+        }
+
         @JavascriptInterface
         public void saveBackup(String json) {
             pendingBackupJson = json;

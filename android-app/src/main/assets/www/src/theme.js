@@ -31,14 +31,14 @@ export function applyTheme(mode) {
 
   if (mode === "light") {
     html.setAttribute("data-theme", "light");
-    updateMetaThemeColor("#f0f7ff");
+    updateMetaThemeColor("#dceaf7");
   } else if (mode === "dark") {
     html.setAttribute("data-theme", "dark");
     updateMetaThemeColor("#050b1a");
   } else if (mode === "system") {
     const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     html.setAttribute("data-theme", isDark ? "dark" : "light");
-    updateMetaThemeColor(isDark ? "#050b1a" : "#f0f7ff");
+    updateMetaThemeColor(isDark ? "#050b1a" : "#dceaf7");
   } else if (mode === "auto") {
     body.classList.add("theme-auto");
     updateSolarSky();
@@ -55,6 +55,19 @@ function updateMetaThemeColor(color) {
     document.head.appendChild(metaThemeColor);
   }
   metaThemeColor.content = color;
+
+  if (window.SolarAndroid && window.SolarAndroid.setSystemColors) {
+    // Basic brightness check to determine if text should be light or dark
+    // For our specific palettes: 
+    // #dceaf7 (light theme) -> dark text
+    // #050b1a (dark theme) -> light text
+    // cycle-dawn #1e293b -> light text
+    // cycle-day #f0f9ff -> dark text
+    // cycle-evening #0f172a -> light text
+    // cycle-night #020617 -> light text
+    const isLightText = color === "#050b1a" || color === "#1e293b" || color === "#0f172a" || color === "#020617";
+    window.SolarAndroid.setSystemColors(color, isLightText);
+  }
 }
 
 function updateSolarSky() {
