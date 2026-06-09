@@ -1,5 +1,6 @@
 import { buildSolarModel } from "./analytics.js";
 import { renderBarChart, renderLineChart } from "./charts.js";
+import { checkForUpdates } from "./updates.js";
 import {
   deleteReading,
   exportBackup,
@@ -68,6 +69,7 @@ async function init() {
   els.solarCapacityUnit.value = settings.solarCapacityUnit || "kW";
   bindEvents();
   await refresh();
+  checkForUpdates();
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./service-worker.js").catch(() => {});
 }
 
