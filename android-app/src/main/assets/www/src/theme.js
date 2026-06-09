@@ -31,14 +31,14 @@ export function applyTheme(mode) {
 
   if (mode === "light") {
     html.setAttribute("data-theme", "light");
-    updateMetaThemeColor("#dceaf7");
+    updateMetaThemeColor("#b8dff2");
   } else if (mode === "dark") {
     html.setAttribute("data-theme", "dark");
     updateMetaThemeColor("#050b1a");
   } else if (mode === "system") {
     const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     html.setAttribute("data-theme", isDark ? "dark" : "light");
-    updateMetaThemeColor(isDark ? "#050b1a" : "#dceaf7");
+    updateMetaThemeColor(isDark ? "#050b1a" : "#b8dff2");
   } else if (mode === "auto") {
     body.classList.add("theme-auto");
     updateSolarSky();
@@ -57,14 +57,6 @@ function updateMetaThemeColor(color) {
   metaThemeColor.content = color;
 
   if (window.SolarAndroid && window.SolarAndroid.setSystemColors) {
-    // Basic brightness check to determine if text should be light or dark
-    // For our specific palettes: 
-    // #dceaf7 (light theme) -> dark text
-    // #050b1a (dark theme) -> light text
-    // cycle-dawn #1e293b -> light text
-    // cycle-day #f0f9ff -> dark text
-    // cycle-evening #0f172a -> light text
-    // cycle-night #020617 -> light text
     const isLightText = color === "#050b1a" || color === "#1e293b" || color === "#0f172a" || color === "#020617";
     window.SolarAndroid.setSystemColors(color, isLightText);
   }
@@ -80,13 +72,13 @@ function updateSolarSky() {
   // Time-based Celestial Widget emojis
   let emoji = "🌙";
   
-  if (mins >= 240 && mins < 360) { // 04:00 - 06:00 Sunrise
-    emoji = "🌄";
-  } else if (mins >= 360 && mins < 1020) { // 06:00 - 17:00 Sun
+  if (mins >= 300 && mins < 720) { // 05:00 - 12:00 Morning
     emoji = "☀️";
-  } else if (mins >= 1020 && mins < 1140) { // 17:00 - 19:00 Sunset
+  } else if (mins >= 720 && mins < 1020) { // 12:00 - 17:00 Afternoon
+    emoji = "🌤";
+  } else if (mins >= 1020 && mins < 1140) { // 17:00 - 19:00 Evening
     emoji = "🌇";
-  } else { // 19:00 - 04:00 Moon
+  } else { // 19:00 - 05:00 Night
     emoji = "🌙";
   }
 
