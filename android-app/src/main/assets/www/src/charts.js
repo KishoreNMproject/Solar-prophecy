@@ -1,9 +1,9 @@
 function getThemeColors() {
   const styles = getComputedStyle(document.documentElement);
   return {
-    actual: "#2ecc71",
-    estimated: "#f39c12",
-    forecast: "#3498db",
+    actual: styles.getPropertyValue("--chart-actual").trim() || "#2ecc71",
+    estimated: styles.getPropertyValue("--chart-estimated").trim() || "#f39c12",
+    forecast: styles.getPropertyValue("--chart-forecast").trim() || "#3498db",
     grid: styles.getPropertyValue("--chart-grid").trim() || "rgba(255, 255, 255, 0.05)",
     text: styles.getPropertyValue("--chart-text").trim() || "#8ca5a0",
     trend: "#9b59b6",

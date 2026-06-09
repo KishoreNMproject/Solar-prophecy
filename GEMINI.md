@@ -19,6 +19,7 @@ The analytics layer foundation is being repaired. UI stability and performance h
 - **No New Features:** Do not improve appearance. Do not add features. Do not add AI, ML, or weather APIs.
 - **Data Integrity:** Only the latest observation of a day becomes the **Daily Closing Record**. Historical accounting must consume Daily Closing Records only.
 - **Forecast Gatekeeping:** Respect data availability thresholds (0-6: Learning, 7-29: Limited, 30+: Normal). Hide long-range predictions until sufficient data exists.
+- **Release Notes:** Use appropriate version incrementals, for devastatingly large updates, the version no. must jump from 1.x.x to 2.x.x, for major updates it will be like x.1.x to x.2.x, for minor updates or very small changes use x.x.1 to x.x.2 like versioning
 - **Scope Restriction:** Focus exclusively on correcting the data model and analytics architecture. Do not implement UI, visual, or forecasting algorithm changes unless required for correctness/gatekeeping.
 - **Android Native Integration:** All file system interactions (import/export) must use proper Android intents and callbacks. Standard HTML file inputs must be hidden and triggered programmatically for a native feel.
 CRITICAL:
@@ -89,6 +90,67 @@ Expected deliverables after implementation:
 
 A source code modification without a successful Android build is considered incomplete.
 
+## Versioning Policy
+
+Use semantic-style versioning for all Solar Prophecy releases.
+
+### PATCH Releases (x.x.Z)
+
+Use for:
+
+* Bug fixes
+* UI adjustments
+* Text corrections
+* Theme tweaks
+* Minor OTA improvements
+* Small usability enhancements
+
+Examples:
+
+* 1.3.6 → 1.3.7
+* 1.3.7 → 1.3.8
+
+### MINOR Releases (x.Y.x)
+
+Use for:
+
+* New features
+* Significant UI redesigns
+* New settings
+* New analytics capabilities
+* New forecast features
+* New import/export capabilities
+* New update-system functionality
+
+Examples:
+
+* 1.3.8 → 1.4.0
+* 1.4.0 → 1.5.0
+
+### MAJOR Releases (X.x.x)
+
+Use for:
+
+* Architectural redesigns
+* Major forecasting engine upgrades
+* Breaking changes
+* Complete UI overhauls
+* New platform support
+* Major workflow changes
+* Features that fundamentally change how Solar Prophecy operates
+
+Examples:
+
+* 1.9.4 → 2.0.0
+* 2.4.7 → 3.0.0
+
+### Additional Rules
+
+* Never skip versions without reason.
+* Always increment sequentially.
+* Generate release notes automatically.
+* Ensure APK versionName and versionCode remain synchronized.
+* Use the smallest version increment that accurately reflects the scope of the update.
 
 ## Roadmap & Implementation Steps
 

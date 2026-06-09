@@ -77,27 +77,23 @@ function updateSolarSky() {
   const html = document.documentElement;
   const widget = document.querySelector("#celestialWidget");
 
-  // Time-based Celestial Widget colors
-  let widgetColor = "";
-  let widgetGlow = "";
+  // Time-based Celestial Widget emojis
+  let emoji = "🌙";
   
-  if (mins >= 300 && mins < 600) { // Morning
-    widgetColor = "#fcd34d"; // Warm yellow
-    widgetGlow = "rgba(252, 211, 77, 0.6)";
-  } else if (mins >= 600 && mins < 960) { // Midday
-    widgetColor = "#fbbf24"; // Bright gold
-    widgetGlow = "rgba(251, 191, 36, 0.8)";
-  } else if (mins >= 960 && mins < 1140) { // Evening
-    widgetColor = "#f97316"; // Orange
-    widgetGlow = "rgba(249, 115, 22, 0.6)";
-  } else { // Night
-    widgetColor = "#cbd5e1"; // Silver gray
-    widgetGlow = "rgba(203, 213, 225, 0.4)";
+  if (mins >= 240 && mins < 360) { // 04:00 - 06:00 Sunrise
+    emoji = "🌄";
+  } else if (mins >= 360 && mins < 1020) { // 06:00 - 17:00 Sun
+    emoji = "☀️";
+  } else if (mins >= 1020 && mins < 1140) { // 17:00 - 19:00 Sunset
+    emoji = "🌇";
+  } else { // 19:00 - 04:00 Moon
+    emoji = "🌙";
   }
 
   if (widget) {
-    widget.style.background = widgetColor;
-    widget.style.boxShadow = `0 0 20px ${widgetGlow}`;
+    widget.textContent = emoji;
+    widget.style.background = "transparent";
+    widget.style.boxShadow = "none";
   }
 
   // Determine Cycle Phase for Auto Mode

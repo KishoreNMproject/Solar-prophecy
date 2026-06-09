@@ -419,13 +419,18 @@ function renderCharts() {
 
   // Monthly Chart
   const monthlyPanel = document.querySelector("#monthlyPanel");
-  const monthlyPlaceholder = monthlyPanel.querySelector(".learning-placeholder");
+  const monthlyLearningInfo = document.querySelector("#monthlyLearningInfo");
   if (isDeveloping) {
     monthlyPanel.classList.add("compact");
-    monthlyPlaceholder.hidden = false;
+    if (monthlyLearningInfo) {
+      monthlyLearningInfo.hidden = false;
+      document.querySelector("#monthlyReadinessPct").textContent = `${Math.round((q.actualDayCount / 30) * 100)}%`;
+      document.querySelector("#monthlyCollectedDays").textContent = `${q.actualDayCount} / 30`;
+      document.querySelector("#monthlyRemainingDays").textContent = Math.max(0, 30 - q.actualDayCount);
+    }
   } else {
     monthlyPanel.classList.remove("compact");
-    monthlyPlaceholder.hidden = true;
+    if (monthlyLearningInfo) monthlyLearningInfo.hidden = true;
     const monthly = monthlyChartPoints();
     renderBarChart(document.querySelector("#monthlyChart"), monthly, { label: "monthly kWh" });
   }

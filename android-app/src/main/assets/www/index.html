@@ -24,26 +24,32 @@
       </div>
     </header>
 
-      <section class="gauge-container" style="position: relative;">
-        <div id="celestialWidget" class="celestial-widget" aria-hidden="true"></div>
-        <div class="gauge-wrapper">
-          <svg class="gauge-svg" viewBox="0 0 200 200">
-            <circle class="gauge-track" cx="100" cy="100" r="90"></circle>
-            <circle class="gauge-progress" id="gaugeProgress" cx="100" cy="100" r="90" style="stroke-dashoffset: 565.48;"></circle>
-          </svg>
-          <div class="gauge-content">
-            <span class="gauge-value" id="gaugeValue">0.00</span>
-            <span class="gauge-label">kWh today</span>
+      <section class="gauge-container">
+        <div class="hero-left">
+          <div id="celestialWidget" class="celestial-widget" aria-hidden="true"></div>
+        </div>
+        <div class="hero-center">
+          <div class="gauge-wrapper">
+            <svg class="gauge-svg" viewBox="0 0 200 200">
+              <circle class="gauge-track" cx="100" cy="100" r="90"></circle>
+              <circle class="gauge-progress" id="gaugeProgress" cx="100" cy="100" r="90" style="stroke-dashoffset: 565.48;"></circle>
+            </svg>
+            <div class="gauge-content">
+              <span class="gauge-value" id="gaugeValue">0.00</span>
+              <span class="gauge-label">kWh today</span>
+            </div>
           </div>
         </div>
-        <div class="gauge-footer">
-          <div class="gauge-stat">
-            <span>Expected</span>
-            <strong id="gaugeExpected">0.00 kWh</strong>
-          </div>
-          <div class="gauge-stat">
-            <span>Progress</span>
-            <strong id="gaugePct">0%</strong>
+        <div class="hero-right">
+          <div class="gauge-footer">
+            <div class="gauge-stat">
+              <span>Expected</span>
+              <strong id="gaugeExpected">0.00 kWh</strong>
+            </div>
+            <div class="gauge-stat">
+              <span>Progress</span>
+              <strong id="gaugePct">0%</strong>
+            </div>
           </div>
         </div>
       </section>
@@ -168,9 +174,14 @@
           <div class="section-heading">
             <h2>Monthly Generation</h2>
           </div>
-          <div class="learning-placeholder" hidden>
-            <p>Learning Phase</p>
-            <span>Collecting monthly patterns...</span>
+          <div class="learning-placeholder" id="monthlyLearningInfo" hidden>
+            <div style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.8;">🌱</div>
+            <p>Learning Monthly Patterns</p>
+            <div class="learning-metrics" style="margin-top: 16px; text-align: left; background: var(--glass-tint); padding: 12px; border-radius: 12px; border: 1px solid var(--line);">
+              <div class="summary-group"><p>Forecast Readiness:</p> <strong id="monthlyReadinessPct">--%</strong></div>
+              <div class="summary-group"><p>Collected Days:</p> <strong id="monthlyCollectedDays">-- / 30</strong></div>
+              <div class="summary-group" style="margin-bottom: 0;"><p>Remaining Days:</p> <strong id="monthlyRemainingDays">--</strong></div>
+            </div>
           </div>
           <canvas id="monthlyChart" height="180"></canvas>
         </article>
