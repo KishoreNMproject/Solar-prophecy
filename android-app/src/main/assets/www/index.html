@@ -152,14 +152,11 @@
       <section id="qualityWarning" class="warning" hidden></section>
 
       <section class="model-status-panel">
-        <div class="section-heading" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-          <h2 style="margin: 0;">Model Status</h2>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span id="modelStatusIndicator" style="font-size: 0.9rem;">🟢</span>
-            <span id="forecastStateText" style="font-size: 0.9rem; font-weight: 700; color: var(--brand);">Learning</span>
-          </div>
+        <div class="section-heading">
+          <h2>Model Status</h2>
+          <span id="forecastStateText">Learning</span>
         </div>
-        <div class="model-status-grid" id="modelStatusStats">
+        <div class="status-stats" id="modelStatusStats">
           <!-- Stats will be injected here -->
         </div>
       </section>
