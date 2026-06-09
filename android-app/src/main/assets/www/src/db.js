@@ -44,6 +44,7 @@ export async function saveReading(db, reading) {
     id,
     value: Number(reading.value) || 0,
     timestamp: date.toISOString(),
+    epoch: Number(reading.epoch) || 0,
     updatedAt: new Date().toISOString()
   };
   
@@ -87,9 +88,24 @@ export async function importBackup(db, backup) {
   await txRequest(readStore.clear());
   
   // Validate and insert readings
-  for (const reading of backup.readings) {
+  let lastValue = -1;
+  let currentEpoch = 0;
+  const sortedReadings = [...backup.readings].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  for (const reading of sortedReadings) {
     if (!reading.timestamp || typeof reading.value !== "number") continue;
     
+    // Infer epoch if missing
+    if (reading.epoch === undefined) {
+      if (lastValue !== -1 && reading.value < lastValue) {
+        currentEpoch++;
+      }
+      reading.epoch = currentEpoch;
+    } else {
+      currentEpoch = reading.epoch;
+    }
+    lastValue = reading.value;
+
     // Ensure the reading has an ID
     if (!reading.id) {
       reading.id = (typeof crypto !== "undefined" && crypto.randomUUID) 

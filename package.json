@@ -5,7 +5,7 @@
   "description": "Self-learning offline solar analytics engine for web and Android.",
   "type": "module",
   "scripts": {
-    "test": "node tests/analytics.test.js",
+    "test": "node tests/analytics.test.js && node tests/reset.test.js",
     "serve": "npx http-server web -p 4173 -c-1",
     "sync:android": "node scripts/sync-android-assets.js"
   },

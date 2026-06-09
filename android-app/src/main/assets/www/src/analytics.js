@@ -46,14 +46,33 @@ export function normalizeReadings(readings) {
     .map((reading) => ({
       id: reading.id,
       timestamp: new Date(reading.timestamp).toISOString(),
-      value: Number(reading.value)
+      value: Number(reading.value),
+      epoch: Number(reading.epoch) || 0
     }))
     .filter((reading) => Number.isFinite(reading.value) && reading.value >= 0)
     .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 }
 
+export function applyEpochs(readings) {
+  if (readings.length === 0) return [];
+  const result = [];
+  let currentOffset = 0;
+  
+  for (let i = 0; i < readings.length; i++) {
+    const r = readings[i];
+    if (i > 0 && r.epoch > readings[i-1].epoch) {
+      currentOffset += readings[i-1].value;
+    }
+    result.push({
+      ...r,
+      virtualValue: r.value + currentOffset
+    });
+  }
+  return result;
+}
+
 export function getDailyClosingRecords(readings) {
-  const normalized = normalizeReadings(readings);
+  const normalized = applyEpochs(normalizeReadings(readings));
   const byDate = new Map();
   
   for (const reading of normalized) {
@@ -66,14 +85,16 @@ export function getDailyClosingRecords(readings) {
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([date, reading]) => ({
       date,
-      value: reading.value,
+      value: reading.virtualValue, // Use virtual value for daily closing
+      rawValue: reading.value,
       readingId: reading.id,
-      timestamp: reading.timestamp
+      timestamp: reading.timestamp,
+      epoch: reading.epoch
     }));
 }
 
 export function buildSolarModel(readings, settings = {}, now = new Date()) {
-  const actualReadings = normalizeReadings(readings);
+  const actualReadings = applyEpochs(normalizeReadings(readings));
   const dailyClosingRecords = getDailyClosingRecords(readings);
   const dailySeries = buildDailySeries(dailyClosingRecords);
   
@@ -332,7 +353,7 @@ function buildDashboard(days, readings, forecasts, dataQuality, settings, now, p
     biMonthlyForecast: forecasts.biMonthly,
     annualForecast: forecasts.annual,
     systemAgeDays: ageDays,
-    observedLifetimeGeneration: readings.length ? round(readings[readings.length - 1].value - readings[0].value) : 0,
+    observedLifetimeGeneration: readings.length ? round(readings[readings.length - 1].virtualValue - readings[0].virtualValue) : 0,
     forecastState: forecasts.state,
     solarPerformance: {
       score: performanceScore,

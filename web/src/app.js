@@ -74,19 +74,32 @@ async function init() {
 function bindEvents() {
   els.form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const readingValue = els.readingValue.value;
+    const readingValue = Number(els.readingValue.value);
     const readingId = els.readingId.value || undefined;
     const timestamp = els.useCustomTimestamp.checked ? els.readingTimestamp.value : new Date().toISOString();
     
-    console.log("Saving reading:", { readingId, readingValue, timestamp });
+    // Determine epoch
+    let epoch = 0;
+    const sortedReadings = [...readings].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const prevReading = sortedReadings.filter(r => new Date(r.timestamp) < new Date(timestamp)).pop();
+    
+    let message = "Reading saved.";
+    if (prevReading) {
+      epoch = prevReading.epoch || 0;
+      if (readingValue < prevReading.value) {
+        epoch++;
+        message = "Meter reset detected. Historical production preserved.";
+      }
+    }
 
     await saveReading(db, {
       id: readingId,
       value: readingValue,
-      timestamp
+      timestamp,
+      epoch
     });
     resetForm();
-    await refresh("Reading saved.");
+    await refresh(message);
   });
 
   els.cancelEdit.addEventListener("click", resetForm);
