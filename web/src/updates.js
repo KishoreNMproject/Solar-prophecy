@@ -1,6 +1,9 @@
 const CURRENT_VERSION = "1.3.1";
 const GITHUB_REPO = "KishoreNMproject/Solar-prophecy";
 
+let activeUpdateModal = null;
+let currentUpdateRelease = null;
+
 export async function checkForUpdates() {
   try {
     const isAndroid = !!window.SolarAndroid;
@@ -67,6 +70,7 @@ function showWhatsNew(isAndroid) {
 }
 
 function showUpdateModal(release, isAndroid) {
+  currentUpdateRelease = release;
   const changelogHtml = release.body 
     ? `<ul>${release.body.split("\n").filter(l => l.trim().startsWith("*") || l.trim().startsWith("-")).map(l => `<li>${l.replace(/^[* -]+/, "").trim()}</li>`).slice(0, 5).join("")}</ul>`
     : "<ul><li>Performance improvements</li><li>Bug fixes</li></ul>";
@@ -74,7 +78,7 @@ function showUpdateModal(release, isAndroid) {
   const apkAsset = release.assets.find(a => a.name.endsWith(".apk"));
   const downloadUrl = apkAsset ? apkAsset.browser_download_url : release.html_url;
 
-  renderGlassModal({
+  activeUpdateModal = renderGlassModal({
     icon: isAndroid ? "🚀" : "📱",
     title: isAndroid ? "Solar Prophecy Update Available" : "Android App Update Available",
     subtitle: `What's New`,
@@ -84,13 +88,107 @@ function showUpdateModal(release, isAndroid) {
       { 
         label: isAndroid ? "Download Update" : "Download Android App", 
         primary: true, 
-        onClick: () => window.open(downloadUrl, "_blank") 
+        id: "otaDownloadBtn",
+        onClick: (modal) => {
+          if (isAndroid && apkAsset) {
+            window.SolarAndroid.startUpdateDownload(downloadUrl, release.tag_name);
+            updateModalToDownloading(modal);
+          } else {
+            window.open(downloadUrl, "_blank");
+            modal.remove();
+          }
+        } 
       },
       { label: "View Full Release Notes", onClick: () => window.open(release.html_url, "_blank") },
       { label: isAndroid ? "Remind Me Later" : "Dismiss", onClick: (modal) => modal.remove() }
     ]
   });
 }
+
+function updateModalToDownloading(modal) {
+  const actionsContainer = modal.querySelector(".modal-actions");
+  actionsContainer.innerHTML = `
+    <div class="ota-progress-container">
+      <div class="ota-progress-label">
+        <span>Downloading Update...</span>
+        <span id="otaProgressPct">0%</span>
+      </div>
+      <div class="ota-progress-bar">
+        <div class="ota-progress-fill" id="otaProgressFill"></div>
+      </div>
+    </div>
+    <button class="secondary" id="otaHideBtn">Hide Download</button>
+  `;
+
+  modal.querySelector("#otaHideBtn").addEventListener("click", () => {
+    modal.remove();
+    activeUpdateModal = null;
+  });
+}
+
+function updateModalToReady(modal, release) {
+  const actionsContainer = modal.querySelector(".modal-actions");
+  actionsContainer.innerHTML = `
+    <p style="font-size: 0.9rem; color: var(--green); margin-bottom: 12px; font-weight: 600;">Update Ready: Solar Prophecy ${release.tag_name} downloaded.</p>
+    <button class="primary" id="otaInstallBtn">Install Now</button>
+    <button class="secondary" id="otaLaterBtn">Later</button>
+  `;
+
+  modal.querySelector("#otaInstallBtn").addEventListener("click", () => {
+    window.SolarAndroid.installUpdate(release.tag_name);
+  });
+
+  modal.querySelector("#otaLaterBtn").addEventListener("click", () => {
+    modal.remove();
+    activeUpdateModal = null;
+  });
+}
+
+function updateModalToFailed(modal, reason) {
+  const actionsContainer = modal.querySelector(".modal-actions");
+  actionsContainer.innerHTML = `
+    <p style="font-size: 0.9rem; color: var(--rose); margin-bottom: 12px; font-weight: 600;">Update Failed: ${reason || "Unknown error"}</p>
+    <button class="primary" id="otaRetryBtn">Retry</button>
+    <button class="secondary" id="otaCloseBtn">Close</button>
+  `;
+
+  modal.querySelector("#otaRetryBtn").addEventListener("click", () => {
+    modal.remove();
+    showUpdateModal(currentUpdateRelease, true);
+  });
+
+  modal.querySelector("#otaCloseBtn").addEventListener("click", () => {
+    modal.remove();
+    activeUpdateModal = null;
+  });
+}
+
+window.onUpdateDownloadProgress = function(progress, status, error) {
+  if (!activeUpdateModal) {
+    if (status === 'success' && currentUpdateRelease) {
+      // If modal was hidden, maybe show it again or show a notification toast in web UI?
+      // For now, let's just allow the user to find it again via the update check if they wanted.
+      // But actually, we should probably re-show the modal in 'Ready' state.
+      activeUpdateModal = showUpdateModal(currentUpdateRelease, true);
+    }
+    if (status === 'success') return;
+    if (status !== 'downloading') return; 
+    // We only care about progress if the modal is open, or we re-open it.
+    return;
+  }
+
+  const fill = activeUpdateModal.querySelector("#otaProgressFill");
+  const text = activeUpdateModal.querySelector("#otaProgressPct");
+
+  if (status === 'downloading') {
+    if (fill) fill.style.width = progress + "%";
+    if (text) text.textContent = progress + "%";
+  } else if (status === 'success') {
+    updateModalToReady(activeUpdateModal, currentUpdateRelease);
+  } else if (status === 'failed') {
+    updateModalToFailed(activeUpdateModal, error);
+  }
+};
 
 function renderGlassModal({ icon, title, subtitle, versionInfo, contentHtml, actions }) {
   const overlay = document.createElement("div");
@@ -132,6 +230,8 @@ function renderGlassModal({ icon, title, subtitle, versionInfo, contentHtml, act
   actions.forEach((action, i) => {
     overlay.querySelector(`#modalAction${i}`).addEventListener("click", () => action.onClick(overlay));
   });
+
+  return overlay;
 }
 
 function showAndroidPromotion() {

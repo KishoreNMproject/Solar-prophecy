@@ -2,9 +2,16 @@ package app.solarprophecy;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -15,10 +22,14 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import androidx.core.content.FileProvider;
 import androidx.webkit.WebViewAssetLoader;
 
+import java.io.File;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends Activity {
     private static final int CREATE_FILE_REQUEST_CODE = 1;
@@ -27,6 +38,9 @@ public class MainActivity extends Activity {
     private WebViewAssetLoader assetLoader;
     private String pendingBackupJson;
     private ValueCallback<Uri[]> mFilePathCallback;
+    private DownloadManager downloadManager;
+    private long downloadId = -1;
+    private Timer progressTimer;
 
     @Override
     @SuppressLint("SetJavaScriptEnabled")
@@ -65,7 +79,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        webView.addJavascriptInterface(new BackupBridge(), "SolarAndroid");
+        webView.addJavascriptInterface(new SolarAndroidBridge(), "SolarAndroid");
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -76,6 +90,16 @@ public class MainActivity extends Activity {
 
         setContentView(webView);
         webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html");
+
+        downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+        registerReceiver(onDownloadComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(onDownloadComplete);
+        stopProgressTimer();
     }
 
     @Override
@@ -131,7 +155,61 @@ public class MainActivity extends Activity {
         super.onBackPressed();
     }
 
-    public class BackupBridge {
+    private void startProgressTimer() {
+        stopProgressTimer();
+        progressTimer = new Timer();
+        progressTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                updateDownloadProgress();
+            }
+        }, 0, 500);
+    }
+
+    private void stopProgressTimer() {
+        if (progressTimer != null) {
+            progressTimer.cancel();
+            progressTimer = null;
+        }
+    }
+
+    private void updateDownloadProgress() {
+        if (downloadId == -1) return;
+
+        DownloadManager.Query query = new DownloadManager.Query();
+        query.setFilterById(downloadId);
+        Cursor cursor = downloadManager.query(query);
+        if (cursor.moveToFirst()) {
+            @SuppressLint("Range") int bytesDownloaded = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+            @SuppressLint("Range") int bytesTotal = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+            @SuppressLint("Range") int status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
+
+            if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                stopProgressTimer();
+                runOnUiThread(() -> webView.evaluateJavascript("window.onUpdateDownloadProgress(100, 'success')", null));
+            } else if (status == DownloadManager.STATUS_FAILED) {
+                stopProgressTimer();
+                @SuppressLint("Range") int reason = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON));
+                runOnUiThread(() -> webView.evaluateJavascript("window.onUpdateDownloadProgress(0, 'failed', '" + reason + "')", null));
+            } else {
+                int progress = bytesTotal > 0 ? (int) ((bytesDownloaded * 100L) / bytesTotal) : 0;
+                runOnUiThread(() -> webView.evaluateJavascript("window.onUpdateDownloadProgress(" + progress + ", 'downloading')", null));
+            }
+        }
+        cursor.close();
+    }
+
+    private final BroadcastReceiver onDownloadComplete = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+            if (downloadId == id) {
+                updateDownloadProgress();
+            }
+        }
+    };
+
+    public class SolarAndroidBridge {
         @JavascriptInterface
         public void saveBackup(String json) {
             pendingBackupJson = json;
@@ -143,6 +221,38 @@ public class MainActivity extends Activity {
             intent.putExtra(Intent.EXTRA_TITLE, fileName);
             
             startActivityForResult(intent, CREATE_FILE_REQUEST_CODE);
+        }
+
+        @JavascriptInterface
+        public void startUpdateDownload(String url, String versionName) {
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+            request.setTitle("Solar Prophecy Update");
+            request.setDescription("Downloading version " + versionName);
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "SolarProphecy/SolarProphecy-" + versionName + ".apk");
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                request.setRequiresCharging(false);
+                request.setRequiresDeviceIdle(false);
+            }
+
+            downloadId = downloadManager.enqueue(request);
+            startProgressTimer();
+        }
+
+        @JavascriptInterface
+        public void installUpdate(String versionName) {
+            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "SolarProphecy/SolarProphecy-" + versionName + ".apk");
+            if (file.exists()) {
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                Uri apkUri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", file);
+                intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            } else {
+                Toast.makeText(MainActivity.this, "Update file not found", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }
