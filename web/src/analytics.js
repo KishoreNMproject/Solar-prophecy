@@ -1,5 +1,14 @@
 const DAY_MS = 86_400_000;
 
+export const SOLAR_PHASE = {
+  DAWN: "Dawn",
+  RAMP_UP: "Ramp-Up",
+  PEAK: "Peak Production",
+  DECLINE: "Decline",
+  POST_SUNSET: "Post-Sunset Validation",
+  CLOSED: "Closed Day"
+};
+
 export function toDateKey(input) {
   const date = input instanceof Date ? input : new Date(input);
   const y = date.getFullYear();
@@ -41,6 +50,26 @@ export function yearKey(key) {
   return key.slice(0, 4);
 }
 
+export function getSolarPhase(date, now = new Date()) {
+  const d = date instanceof Date ? date : new Date(date);
+  const n = now instanceof Date ? now : new Date(now);
+  
+  const dKey = toDateKey(d);
+  const nKey = toDateKey(n);
+  
+  if (dKey < nKey) return SOLAR_PHASE.CLOSED;
+  if (dKey > nKey) return SOLAR_PHASE.DAWN; // Future date? Treat as Dawn.
+
+  const hour = d.getHours();
+  
+  if (hour < 8) return SOLAR_PHASE.DAWN;
+  if (hour < 11) return SOLAR_PHASE.RAMP_UP;
+  if (hour < 15) return SOLAR_PHASE.PEAK;
+  if (hour < 18) return SOLAR_PHASE.DECLINE;
+  if (hour < 21) return SOLAR_PHASE.POST_SUNSET;
+  return SOLAR_PHASE.CLOSED;
+}
+
 export function normalizeReadings(readings) {
   return readings
     .map((reading) => ({
@@ -71,31 +100,49 @@ export function applyEpochs(readings) {
   return result;
 }
 
-export function getDailyClosingRecords(readings) {
+export function getDailyClosingRecords(readings, now = new Date()) {
   const normalized = applyEpochs(normalizeReadings(readings));
   const byDate = new Map();
+  const nKey = toDateKey(now);
   
   for (const reading of normalized) {
     const date = toDateKey(reading.timestamp);
-    // Always take the latest reading for the day
-    byDate.set(date, reading);
+    const phase = getSolarPhase(reading.timestamp, now);
+    
+    // Only accept readings that are in POST_SUNSET or CLOSED phase for that day
+    // or if the day is before "now"
+    if (date < nKey || phase === SOLAR_PHASE.POST_SUNSET || phase === SOLAR_PHASE.CLOSED) {
+      const existing = byDate.get(date);
+      if (existing) {
+        // Handle Duplicate Closing Record Handling
+        // First valid post-sunset reading becomes the Daily Closing Record.
+        // Later entries are confirmations if they have the same value.
+        // If they have a different (higher) value, we take the latest.
+        if (reading.virtualValue > existing.virtualValue) {
+           byDate.set(date, reading);
+        }
+      } else {
+        byDate.set(date, reading);
+      }
+    }
   }
   
   return [...byDate.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([date, reading]) => ({
       date,
-      value: reading.virtualValue, // Use virtual value for daily closing
+      value: reading.virtualValue,
       rawValue: reading.value,
       readingId: reading.id,
       timestamp: reading.timestamp,
-      epoch: reading.epoch
+      epoch: reading.epoch,
+      phase: getSolarPhase(reading.timestamp, now)
     }));
 }
 
 export function buildSolarModel(readings, settings = {}, now = new Date()) {
-  const actualReadings = applyEpochs(normalizeReadings(readings));
-  const dailyClosingRecords = getDailyClosingRecords(readings);
+  const allReadings = applyEpochs(normalizeReadings(readings));
+  const dailyClosingRecords = getDailyClosingRecords(readings, now);
   const dailySeries = buildDailySeries(dailyClosingRecords);
   
   // Capacity parsing
@@ -103,19 +150,21 @@ export function buildSolarModel(readings, settings = {}, now = new Date()) {
   const capacityUnit = settings.solarCapacityUnit || "kW";
   const capacityKW = capacityUnit === "W" ? capacityValue / 1000 : capacityValue;
 
-  const modelDays = dailySeries.filter((day) => day.generation > 0 || day.kind !== "empty");
+  // Historical accounting must consume Daily Closing Records only.
   const actualDays = dailySeries.filter((day) => day.kind === "actual");
   const estimatedDays = dailySeries.filter((day) => day.kind === "estimated");
+  const modelDays = [...actualDays, ...estimatedDays].sort((a, b) => a.date.localeCompare(b.date));
   
   const forecastConfidence = computeConfidence(actualDays, estimatedDays);
-  const patterns = learnPatterns(modelDays);
+  const patterns = learnPatterns(actualDays); // Train on actual DCRs only
   const forecasts = buildForecasts(actualDays, patterns, forecastConfidence, now, capacityKW);
-  const aggregates = aggregateSeries(modelDays);
-  const dataQuality = buildDataQuality(actualReadings, dailyClosingRecords, actualDays, estimatedDays, forecastConfidence);
-  const dashboard = buildDashboard(modelDays, actualReadings, forecasts, dataQuality, settings, now, patterns, capacityKW);
+  const aggregates = aggregateSeries(actualDays); // Validated metrics only consume actual DCRs
+  
+  const dataQuality = buildDataQuality(allReadings, dailyClosingRecords, actualDays, estimatedDays, forecastConfidence);
+  const dashboard = buildDashboard(modelDays, allReadings, forecasts, dataQuality, settings, now, patterns, capacityKW);
 
   return {
-    readings: actualReadings,
+    readings: allReadings,
     dailyClosingRecords,
     dailySeries: [...modelDays, ...forecasts.sevenDay].sort((a, b) => a.date.localeCompare(b.date)),
     actualDailySeries: actualDays,
@@ -161,15 +210,16 @@ function buildDailySeries(closingRecords) {
 }
 
 function learnPatterns(days) {
+  // Forecast training must consume Daily Closing Records ONLY.
   if (days.length < 7) {
     return { averageDaily: 0, variability: 0, weekday: new Map(), monthly: new Map(), trend: { slope: 0, intercept: 0 } };
   }
-  const actualish = days.filter((day) => day.generation >= 0);
-  const avg = mean(actualish.map((day) => day.generation));
-  const variability = stddev(actualish.map((day) => day.generation));
-  const weekday = groupedAverage(actualish, (day) => fromDateKey(day.date).getDay());
-  const monthly = groupedAverage(actualish, (day) => fromDateKey(day.date).getMonth() + 1);
-  const trend = linearTrend(actualish.map((day, index) => ({ x: index, y: day.generation })));
+  const actualOnly = days.filter((day) => day.kind === "actual" && day.generation >= 0);
+  const avg = mean(actualOnly.map((day) => day.generation));
+  const variability = stddev(actualOnly.map((day) => day.generation));
+  const weekday = groupedAverage(actualOnly, (day) => fromDateKey(day.date).getDay());
+  const monthly = groupedAverage(actualOnly, (day) => fromDateKey(day.date).getMonth() + 1);
+  const trend = linearTrend(actualOnly.map((day, index) => ({ x: index, y: day.generation })));
   return { averageDaily: avg, variability, weekday, monthly, trend };
 }
 
@@ -177,7 +227,12 @@ function buildForecasts(actualDays, patterns, baseConfidence, now, capacityKW) {
   const dayCount = actualDays.length;
   const lastDate = actualDays.length ? actualDays[actualDays.length - 1].date : toDateKey(now);
   
-  if (dayCount < 7) {
+  // Forecast Readiness States
+  let state = "learning";
+  if (dayCount >= 30) state = "ready";
+  else if (dayCount >= 7) state = "limited";
+
+  if (state === "learning") {
     return { 
       tomorrow: null, 
       sevenDay: [], 
@@ -185,7 +240,7 @@ function buildForecasts(actualDays, patterns, baseConfidence, now, capacityKW) {
       biMonthly: { days: 60, generation: 0, confidence: 0 }, 
       annual: { days: 365, generation: 0, confidence: 0 }, 
       confidence: 0,
-      state: "learning"
+      state
     };
   }
 
@@ -203,7 +258,6 @@ function buildForecasts(actualDays, patterns, baseConfidence, now, capacityKW) {
     });
   }
 
-  const state = dayCount < 30 ? "limited" : "normal";
   const tomorrow = sevenDay[0] || null;
   const monthly = forecastPeriod(actualDays, patterns, baseConfidence, 30, capacityKW);
   const biMonthly = forecastPeriod(actualDays, patterns, baseConfidence, 60, capacityKW);
@@ -232,8 +286,6 @@ function predictDay(patterns, date, index, capacityKW) {
   
   let prediction = Math.max(0, blended);
   
-  // Capacity constraint: A system shouldn't exceed its theoretical max output significantly.
-  // 8kWh per kW of capacity is a very generous daily ceiling.
   if (capacityKW > 0) {
     const maxDaily = capacityKW * 8;
     prediction = Math.min(prediction, maxDaily);
@@ -243,12 +295,14 @@ function predictDay(patterns, date, index, capacityKW) {
 }
 
 function aggregateSeries(days) {
+  // Validated metrics consume actual DCRs ONLY
+  const actualOnly = days.filter(d => d.kind === "actual");
   return {
-    weekly: aggregateByRolling(days, 7),
-    monthly: aggregateBy(days, monthKey),
-    biMonthly: aggregateBy(days, biMonthKey),
-    yearly: aggregateBy(days, yearKey),
-    lifetime: round(sum(days.map((day) => day.generation)))
+    weekly: aggregateByRolling(actualOnly, 7),
+    monthly: aggregateBy(actualOnly, monthKey),
+    biMonth: aggregateBy(actualOnly, biMonthKey),
+    yearly: aggregateBy(actualOnly, yearKey),
+    lifetime: round(sum(actualOnly.map((day) => day.generation)))
   };
 }
 
@@ -294,9 +348,28 @@ function buildDataQuality(readings, dailyClosingRecords, actualDays, estimatedDa
 
 function buildDashboard(days, readings, forecasts, dataQuality, settings, now, patterns, capacityKW) {
   const today = toDateKey(now);
-  const todayGeneration = days.find((day) => day.date === today)?.generation || 0;
-  const last7 = days.slice(-7);
-  const last30 = days.slice(-30);
+  const todayPhase = getSolarPhase(now, now);
+  const isDayClosed = todayPhase === SOLAR_PHASE.CLOSED || todayPhase === SOLAR_PHASE.POST_SUNSET;
+  
+  // LIVE METRICS
+  const todayReadings = readings.filter(r => toDateKey(r.timestamp) === today);
+  let liveTodayGeneration = 0;
+  if (todayReadings.length > 0) {
+    const firstOfToday = todayReadings[0];
+    const lastOfToday = todayReadings[todayReadings.length - 1];
+    liveTodayGeneration = lastOfToday.virtualValue - (firstOfToday.virtualValue - (firstOfToday.rawValue > 0 ? (firstOfToday.virtualValue - firstOfToday.rawValue) : 0));
+    
+    // Better calculation: find the last DCR before today
+    const lastDCR = days.filter(d => d.date < today && d.kind === "actual").pop();
+    if (lastDCR) {
+      // This is a bit complex due to epochs, but virtualValue is cumulative
+      const lastReading = todayReadings[todayReadings.length - 1];
+      liveTodayGeneration = Math.max(0, lastReading.virtualValue - lastDCR.virtualValue);
+    }
+  }
+
+  const last7 = days.filter(d => d.kind === "actual").slice(-7);
+  const last30 = days.filter(d => d.kind === "actual").slice(-30);
   const actualDays = days.filter((day) => day.kind === "actual");
   const best = maxBy(actualDays, (day) => day.generation);
   const worst = minBy(actualDays, (day) => day.generation);
@@ -305,47 +378,39 @@ function buildDashboard(days, readings, forecasts, dataQuality, settings, now, p
   const ageStart = install || firstReading;
   const ageDays = ageStart ? Math.max(0, Math.floor((now - ageStart) / DAY_MS)) : null;
   
-  const averageDaily = actualDays.length >= 7 ? mean(actualDays.map((day) => day.generation)) : 0;
   const expectedToday = forecasts.state !== "learning" ? predictDay(patterns, now, actualDays.length, capacityKW) : 0;
 
-  // Performance Score calculation
-  let performanceScore = 100;
-  let performanceStatus = "Excellent";
-  
-  if (expectedToday > 0) {
-    const ratio = todayGeneration / expectedToday;
-    performanceScore = Math.round(ratio * 100);
-    
-    if (performanceScore >= 90) performanceStatus = "Excellent";
-    else if (performanceScore >= 70) performanceStatus = "Good";
-    else if (performanceScore >= 50) performanceStatus = "Moderate";
-    else if (performanceScore >= 30) performanceStatus = "Poor";
-    else performanceStatus = "Critical";
-  } else if (todayGeneration > 0 && capacityKW > 0) {
-    // If no expectation yet, compare with capacity potential (roughly)
-    const ratio = todayGeneration / (capacityKW * 5); // 5 is a typical good day factor
-    performanceScore = Math.min(100, Math.round(ratio * 100));
-    
-    if (performanceScore >= 90) performanceStatus = "Excellent";
-    else if (performanceScore >= 70) performanceStatus = "Good";
-    else if (performanceScore >= 50) performanceStatus = "Moderate";
-    else if (performanceScore >= 30) performanceStatus = "Poor";
-    else performanceStatus = "Critical";
+  // VALIDATED METRICS GATEKEEPING
+  let performanceScore = 0;
+  let performanceStatus = "Learning Phase";
+  let lowGenerationDetected = false;
+
+  if (isDayClosed && forecasts.state !== "learning" && actualDays.length >= 7) {
+     const todayRecord = actualDays.find(d => d.date === today);
+     const generation = todayRecord ? todayRecord.generation : liveTodayGeneration;
+     
+     if (expectedToday > 0) {
+        const ratio = generation / expectedToday;
+        performanceScore = Math.round(ratio * 100);
+        
+        if (performanceScore >= 90) performanceStatus = "Excellent";
+        else if (performanceScore >= 70) performanceStatus = "Good";
+        else if (performanceScore >= 50) performanceStatus = "Moderate";
+        else if (performanceScore >= 30) performanceStatus = "Poor";
+        else performanceStatus = "Critical";
+        
+        lowGenerationDetected = generation < (expectedToday * 0.4);
+     }
   }
 
-  const lowGenerationDetected = forecasts.state !== "learning" && 
-                                expectedToday > 0 && 
-                                todayGeneration < (expectedToday * 0.4) && 
-                                actualDays.length >= 7;
-
   return {
-    todayGeneration: round(todayGeneration),
+    todayGeneration: round(liveTodayGeneration),
     expectedTodayGeneration: round(expectedToday),
     weeklyAverage: round(mean(last7.map((day) => day.generation))),
     monthlyAverage: round(mean(last30.map((day) => day.generation))),
     bestProductionDay: best || null,
     worstProductionDay: worst || null,
-    lifetimeProduction: round(sum(days.map((day) => day.generation))),
+    lifetimeProduction: round(sum(actualDays.map((day) => day.generation))),
     forecastConfidence: dataQuality.forecastConfidence,
     dataCompletenessScore: dataQuality.completenessScore,
     tomorrowPrediction: forecasts.tomorrow,
@@ -359,7 +424,9 @@ function buildDashboard(days, readings, forecasts, dataQuality, settings, now, p
       score: performanceScore,
       status: performanceStatus
     },
-    lowGenerationDetected
+    lowGenerationDetected,
+    isDayClosed,
+    todayPhase
   };
 }
 
@@ -421,3 +488,4 @@ function round(value, places = 2) {
   const factor = 10 ** places;
   return Math.round((value + Number.EPSILON) * factor) / factor;
 }
+

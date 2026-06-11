@@ -251,8 +251,7 @@ function renderGauge() {
   const q = model.dataQuality;
   const current = d.todayGeneration;
   const expected = d.expectedTodayGeneration || 0.001;
-  const pctValue = Math.round((current / expected) * 100);
-  const displayPct = Math.min(100, pctValue);
+  const isClosed = d.isDayClosed;
   
   els.gaugeValue.textContent = current.toFixed(2);
   
@@ -264,6 +263,21 @@ function renderGauge() {
     return;
   }
 
+  if (!isClosed) {
+    els.gaugeExpected.textContent = `${expected.toFixed(2)} kWh (Est)`;
+    els.gaugePct.textContent = d.todayPhase;
+    
+    const displayPct = Math.min(100, Math.round((current / expected) * 100));
+    const circumference = 2 * Math.PI * 90;
+    const offset = circumference - (circumference * displayPct) / 100;
+    els.gaugeProgress.style.strokeDashoffset = offset;
+    els.gaugeProgress.style.stroke = "var(--muted)";
+    return;
+  }
+
+  const pctValue = Math.round((current / expected) * 100);
+  const displayPct = Math.min(100, pctValue);
+  
   els.gaugeExpected.textContent = `${expected.toFixed(2)} kWh`;
   els.gaugePct.textContent = `${pctValue}%`;
   
@@ -284,9 +298,14 @@ function renderGauge() {
 
 function renderModelStatus() {
   const q = model.dataQuality;
-  const state = model.dashboard.forecastState;
+  const d = model.dashboard;
+  const state = d.forecastState;
   
-  els.forecastStateText.textContent = state.charAt(0).toUpperCase() + state.slice(1);
+  let stateLabel = "Learning";
+  if (state === "limited") stateLabel = "Limited Forecasting";
+  else if (state === "ready") stateLabel = "Forecast Ready";
+
+  els.forecastStateText.textContent = stateLabel;
   
   const dot = document.getElementById("forecastStateDot");
   if (dot) {
@@ -296,6 +315,8 @@ function renderModelStatus() {
   }
   
   const stats = [
+    ["Current Phase", d.todayPhase],
+    ["Forecast State", stateLabel],
     ["Raw Observations", q.rawObservationCount],
     ["Daily Records", q.dailyClosingRecordCount],
     ["Intraday", q.rawObservationCount - q.dailyClosingRecordCount],
@@ -332,8 +353,10 @@ function renderMetrics() {
     ["System age", d.systemAgeDays == null ? "Unknown" : `${Math.floor(d.systemAgeDays / 365)}y ${d.systemAgeDays % 365}d`]
   ];
 
-  if (q.actualDayCount >= 7) {
+  if (d.isDayClosed && q.actualDayCount >= 7) {
     cards.push(["Solar Performance", `${d.solarPerformance.score}% ${d.solarPerformance.status}`]);
+  } else if (q.actualDayCount < 7) {
+    cards.push(["Forecast State", "Learning"]);
   } else {
     cards.push(["Annual Estimate", q.actualDayCount >= 30 ? kwh(d.annualForecast.generation) : "Learning"]);
   }
@@ -374,8 +397,19 @@ function renderReadings() {
 
   els.readingsTable.querySelectorAll("[data-delete]").forEach((button) => {
     button.addEventListener("click", async () => {
-      await deleteReading(db, button.dataset.delete);
-      await refresh("Reading deleted. The model has recalculated estimates.");
+      const id = button.dataset.delete;
+      const reading = model.readings.find(r => r.id === id);
+      const isDCR = model.dailyClosingRecords.some(dcr => dcr.readingId === id);
+      
+      let message = "Reading deleted.";
+      if (isDCR) {
+        message = "Daily Closing Record deleted. Historical metrics have been updated.";
+      } else {
+        message = "Intraday observation deleted. Historical metrics remain unchanged.";
+      }
+      
+      await deleteReading(db, id);
+      await refresh(message);
     });
   });
 }
@@ -383,8 +417,9 @@ function renderReadings() {
 function renderForecast() {
   const f = model.forecasts;
   const q = model.dataQuality;
+  const d = model.dashboard;
   
-  if (q.actualDayCount < 7) {
+  if (d.forecastState === "learning") {
     els.forecastConfidence.textContent = "0% confidence";
     els.forecastList.innerHTML = `<p style="font-size:0.8rem; color:var(--muted); padding: 10px;">Learning - insufficient historical data. Need 7 days of closing records for initial forecasting.</p>`;
     return;
@@ -397,7 +432,7 @@ function renderForecast() {
     ["7-day total", kwh(sum(f.sevenDay.map((day) => day.generation))), f.confidence + "%"]
   ];
 
-  if (q.actualDayCount >= 30) {
+  if (d.forecastState === "ready") {
     rows.push(["Monthly", kwh(f.monthly.generation), f.monthly.confidence + "%"]);
     rows.push(["Bi-monthly", kwh(f.biMonthly.generation), f.biMonthly.confidence + "%"]);
     rows.push(["Annual", kwh(f.annual.generation), f.annual.confidence + "%"]);
@@ -407,15 +442,16 @@ function renderForecast() {
     .map(([label, value, confidence]) => `<div><span>${label}</span><strong>${value}</strong><em>${confidence}</em></div>`)
     .join("");
     
-  if (q.actualDayCount < 30) {
+  if (d.forecastState === "limited") {
     els.forecastList.innerHTML += `<p style="font-size:0.8rem; color:var(--muted); margin-top:10px; padding-top:10px; border-top:1px solid var(--line);">Advanced forecasts hidden until 30 daily records are collected.</p>`;
   }
 }
 
 function renderCharts() {
   const q = model.dataQuality;
-  const isLearning = q.actualDayCount < 7;
-  const isDeveloping = q.actualDayCount < 30;
+  const d = model.dashboard;
+  const isLearning = d.forecastState === "learning";
+  const isDeveloping = d.forecastState !== "ready";
 
   // Daily Chart
   const daily = model.dailySeries.slice(-45).map((day) => ({ 

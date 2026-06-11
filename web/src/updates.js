@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "1.3.13";
+export const CURRENT_VERSION = "1.4.0";
 const GITHUB_REPO = "KishoreNMproject/Solar-prophecy";
 
 let activeUpdateModal = null;
@@ -81,13 +81,13 @@ function isNewerVersion(latest, current) {
 
 function showWhatsNew(isAndroid) {
   const highlights = [
-    "Redesigned Soft Sky Light Theme",
-    "Animated Sun/Moon Widget based on Local Time",
-    "Manual Update Checks in Settings",
-    "Unified Glassmorphism Update Modals",
-    "Continuous Day-Night Cycle Interpolation",
-    "Adaptive Theme System (Light, Dark, System)",
-    "Professional OTA Update System"
+    "Solar Day Lifecycle Engine (Dawn to Closed Day)",
+    "Daily Closing Record System (Post-Sunset readings)",
+    "Analytics Gatekeeping (Suppressing premature warnings)",
+    "Forecast Training Integrity (DCR-only training)",
+    "Enhanced Model Status Dashboard",
+    "Duplicate Closing Record Handling",
+    "Improved Performance Metric Reliability"
   ];
 
   renderGlassModal({
