@@ -6,3 +6,6 @@ node_modules/
 *.aab
 *.keystore
 local.properties
+# Antigravity / AGY agents
+.agents/
+.agents/**
