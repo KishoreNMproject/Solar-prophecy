@@ -1,26 +1,27 @@
-# Solar Prophecy v1.5.5 - UI Bug Fix: Custom Timestamp Checkbox
+# Solar Prophecy v1.5.6 - Platform Specific Update Management
 
 ## SECTION 1 — Solar Prophecy Release Notes
 
 **What changed**
-- Corrected a CSS inheritance bug that was causing the "Custom date and time" checkbox to render incorrectly as a full-width text input.
+- The "Check for Updates" application logic and user interface has been disabled for the Web platform.
+- The Android application retains full continuous OTA capabilities and GitHub release integrations.
 
 **Why it changed**
-- The global `<input>` styling was inadvertently overriding native `<input type="checkbox">` attributes, stripping the `appearance` property and setting width to 100%. This caused confusing UI layouts and a degraded user experience.
+- The Web interface operates dynamically via standard browser caching logic, inherently rendering a manual "Check for Updates" control redundant and confusing for Web users. The feature holds value exclusively for packaged Android deployments running statically.
 
 **User impact**
-- The "Custom date and time" toggle will now render as a properly scaled and recognizable checkbox directly inline with its label. The visual friction of having an "empty bar" has been resolved. Keyboard navigation and touch targets remain accessible and correct.
+- Users accessing Solar Prophecy via standard web browsers will no longer encounter out-of-place update dialogs, Android promotions, or menu controls meant for packaged applications.
+- Android users remain unaffected and will continue experiencing regular OTA updates.
 
 **Technical impact**
-- Updated `styles.css` global `input` selector to explicitly exclude checkboxes (`input:not([type="checkbox"])`).
-- Introduced dedicated `input[type="checkbox"]` scaling, and `.checkbox-row` flexbox layout definitions.
+- App initialization (`app.js`) now gates `checkForUpdates()` strictly behind the `window.SolarAndroid` bridge namespace check.
+- The `navCheckUpdates` DOM element and its parent container are forcibly hidden using an inline style when running outside the Android webview wrapper.
 
 ## SECTION 2 — Auto-Generated Git Diff Changelog
 
 ### Added
-- Specific CSS rules for `input[type="checkbox"]` enforcing native `appearance: auto`, size normalization, and `accent-color`.
-- Layout rules for `.checkbox-row` ensuring vertical alignment and gap spacing.
+- Platform detection logic masking `navCheckUpdates` menu parent element dynamically.
 
 ### Changed
-- Global `input` and `select` rules modified to exclude checkbox interactions via CSS pseudo-class `:not()`.
-- Bumped versions to `v1.5.5` across the project.
+- Conditionalized `checkForUpdates` background execution to Android environments.
+- Version incremented to `v1.5.6`.

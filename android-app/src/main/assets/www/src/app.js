@@ -86,7 +86,13 @@ async function init() {
   els.themeMode.value = settings.themeMode || "system";
   bindEvents();
   await refresh();
-  checkForUpdates();
+  if (window.SolarAndroid) {
+    checkForUpdates();
+  } else {
+    if (els.navCheckUpdates && els.navCheckUpdates.parentElement) {
+      els.navCheckUpdates.parentElement.style.display = "none";
+    }
+  }
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./service-worker.js").catch(() => {});
 }
 
@@ -115,19 +121,21 @@ function bindEvents() {
     });
   });
 
-  els.navCheckUpdates.addEventListener("click", async () => {
-    els.navCheckUpdates.textContent = "Checking...";
-    els.navCheckUpdates.disabled = true;
-    const latest = await manualUpdateCheck();
-    if (latest) {
-      alert("New version available: v" + latest);
-    } else {
-      alert("You are up to date.");
-    }
-    els.navCheckUpdates.textContent = "Check for Updates";
-    els.navCheckUpdates.disabled = false;
-    closeMenu();
-  });
+  if (window.SolarAndroid) {
+    els.navCheckUpdates.addEventListener("click", async () => {
+      els.navCheckUpdates.textContent = "Checking...";
+      els.navCheckUpdates.disabled = true;
+      const latest = await manualUpdateCheck();
+      if (latest) {
+        alert("New version available: v" + latest);
+      } else {
+        alert("You are up to date.");
+      }
+      els.navCheckUpdates.textContent = "Check for Updates";
+      els.navCheckUpdates.disabled = false;
+      closeMenu();
+    });
+  }
 
   els.navAbout.addEventListener("click", () => {
     showAboutModal();

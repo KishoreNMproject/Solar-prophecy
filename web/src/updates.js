@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "1.5.5";
+export const CURRENT_VERSION = "1.5.6";
 export const BUILD_DATE = "June 11, 2026";
 
 export const RELEASE_NOTES = [
