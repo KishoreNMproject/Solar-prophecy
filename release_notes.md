@@ -1,31 +1,33 @@
-# Solar Prophecy v1.5.03 - UI Layout and Daily Generation History Fixes
+# Solar Prophecy v1.5.4 - Stable Navigation Release & Native Patch Notes
 
 ## SECTION 1 — Solar Prophecy Release Notes
 
 **What changed**
-- Corrected the "Daily Generation History" module to render generation deltas derived exclusively from finalized Daily Closing Records, discarding all synthetic interpolation, missing day estimations, or 0 kWh placeholder gap entries.
-- Re-architected the "Home" dashboard layout hierarchy. The Reading Entry Block is now positioned prominently immediately below the Forecast Readiness indicator. 
+- Converted the "About" screen from an external browser redirect into a native, fully offline in-app modal.
+- Built-in scrollable release notes (What's New) display directly inside the application interface.
+- Consolidated all the transitional UI and layout restructuring from v1.5.01 through v1.5.03 into the first stable v1.5.4 release.
 
 **Why it changed**
-- The original design mapping filled timeline gaps with synthetic records, causing misleading zero values or estimations to appear in the History table. The new strict constraint guarantees that only physically confirmed historical events appear in the log.
-- Adjusting the Home screen layout prioritizes the optimal user workflow: (Check Today's Generation -> View Readiness -> Enter Reading). Returning to this ordering significantly reduces visual friction.
+- The application aims to function entirely offline, including providing version information and update histories. Opening a browser to GitHub broke the immersion and offline functionality.
+- This stabilizes the latest UI changes and formally establishes the multi-screen navigation architecture as the new baseline for future updates.
 
 **User impact**
-- Users reviewing their Daily Gen. History will see an authentic sequence of reading comparisons with zero estimated gaps.
-- When launching the application, users will intuitively encounter the Reading form directly below the primary metrics rather than beneath all dashboard warning banners and analytical grids. 
+- Selecting "About" from the menu now instantly displays the app version, build date, and patch notes without leaving the app.
+- A smoother, more integrated experience that completely avoids external browser dependencies unless actively downloading an update.
 
 **Technical impact**
-- `renderDailyHistory` within `app.js` now maps specifically against raw delta calculations of consecutive `dailyClosingRecords`. The table explicitly filters any non-positive or synthetically inserted zero entries. 
-- The DOM element sequence in `index.html` was refactored, moving `<section class="entry-panel">` back to its rightful place. 
+- Deprecated `openReleaseNotes` and replaced it with `showAboutModal` inside `updates.js`.
+- Hardcoded `RELEASE_NOTES` array added to `updates.js` which acts as the localized source of truth for the active changelog.
 
 ## SECTION 2 — Auto-Generated Git Diff Changelog
 
 ### Added
-- Native strict calculation for DCR deltas injected into `dailyHistoryTable`.
+- Native `showAboutModal` function in `updates.js` utilizing the existing `renderGlassModal` architecture.
+- `RELEASE_NOTES` exported array acting as the internal database for displaying patch notes.
 
 ### Changed
-- Moved the `.entry-panel` section ahead of warnings and secondary metrics grids within `screen-home` to restore logical DOM hierarchy.
-- Version increments across package.json, build.gradle, and updates.js to `v1.5.03`.
+- Replaced the `window.open` external link behavior bound to the "About" navigation button in `app.js`.
+- Stabilized package tracking, gradle configs, and update logic to version `1.5.4`.
 
 ### Removed
-- Removed the mapping of `model.actualDailySeries` for the Daily History log to drop zero-gaps / synthetic placeholders.
+- `openReleaseNotes` function that redirected to GitHub.

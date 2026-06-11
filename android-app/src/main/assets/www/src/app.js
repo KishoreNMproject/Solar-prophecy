@@ -1,6 +1,6 @@
 import { buildSolarModel } from "./analytics.js";
 import { renderBarChart, renderLineChart } from "./charts.js";
-import { checkForUpdates, manualUpdateCheck, openReleaseNotes, CURRENT_VERSION } from "./updates.js";
+import { checkForUpdates, manualUpdateCheck, showAboutModal, CURRENT_VERSION } from "./updates.js";
 import { initTheme, applyTheme, getActiveThemeName } from "./theme.js";
 import {
   deleteReading,
@@ -130,7 +130,7 @@ function bindEvents() {
   });
 
   els.navAbout.addEventListener("click", () => {
-    openReleaseNotes();
+    showAboutModal();
     closeMenu();
   });
 

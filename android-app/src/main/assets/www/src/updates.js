@@ -1,4 +1,19 @@
-export const CURRENT_VERSION = "1.5.03";
+export const CURRENT_VERSION = "1.5.4";
+export const BUILD_DATE = "June 11, 2026";
+
+export const RELEASE_NOTES = [
+  "Multi-screen application architecture",
+  "Home screen redesign",
+  "Graphs page",
+  "History page",
+  "Daily Generation History page",
+  "Settings page",
+  "Hamburger navigation menu",
+  "Native update management improvements",
+  "Daily Closing Record workflow refinements",
+  "Analytics reliability improvements",
+  "UI cleanup and organization"
+];
 const GITHUB_REPO = "KishoreNMproject/Solar-prophecy";
 
 let activeUpdateModal = null;
@@ -65,8 +80,29 @@ export async function manualUpdateCheck() {
   }
 }
 
-export function openReleaseNotes() {
-  window.open(`https://github.com/${GITHUB_REPO}/releases`, "_blank");
+export function showAboutModal() {
+  const contentHtml = `
+    <div style="max-height: 250px; overflow-y: auto; padding-right: 8px;">
+      <p style="font-size: 0.9rem; margin-bottom: 12px; color: var(--ink);">
+        Solar Prophecy is a self-learning offline analytics engine that tracks, predicts, and evaluates your solar generation without the cloud.
+      </p>
+      <h3 style="font-size: 0.85rem; color: var(--brand); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">What's New</h3>
+      <ul style="font-size: 0.85rem; padding-left: 20px; color: var(--muted); line-height: 1.6;">
+        ${RELEASE_NOTES.map(note => `<li>${note}</li>`).join("")}
+      </ul>
+    </div>
+  `;
+
+  renderGlassModal({
+    icon: "☀️",
+    title: "Solar Prophecy",
+    subtitle: "About",
+    versionInfo: { current: CURRENT_VERSION, latest: BUILD_DATE },
+    contentHtml: contentHtml,
+    actions: [
+      { label: "Close", primary: true, onClick: (modal) => modal.remove() }
+    ]
+  });
 }
 
 function isNewerVersion(latest, current) {
