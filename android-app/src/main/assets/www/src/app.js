@@ -2,6 +2,7 @@ import { buildSolarModel } from "./analytics.js";
 import { renderBarChart, renderLineChart } from "./charts.js";
 import { checkForUpdates, manualUpdateCheck, showAboutModal, CURRENT_VERSION } from "./updates.js";
 import { initTheme, applyTheme, getActiveThemeName } from "./theme.js";
+import { showAlert, showDangerConfirm } from "./dialog.js";
 import {
   deleteReading,
   exportBackup,
@@ -128,9 +129,9 @@ function bindEvents() {
       els.navCheckUpdates.disabled = true;
       const latest = await manualUpdateCheck();
       if (latest) {
-        alert("New version available: v" + latest);
+        showAlert("Update Available", "New version available: v" + latest);
       } else {
-        alert("You are up to date.");
+        showAlert("Up to Date", "You are already running the latest version.");
       }
       els.navCheckUpdates.textContent = "Check for Updates";
       els.navCheckUpdates.disabled = false;
@@ -273,27 +274,46 @@ function bindEvents() {
       try {
         backup = JSON.parse(text);
       } catch (e) {
-        throw new Error("The selected file is not a valid JSON backup.");
+        els.importData.value = "";
+        return showAlert("Import Failed", "The selected file is not a valid JSON backup.");
       }
 
-      await importBackup(db, backup);
+      showDangerConfirm(
+        "Import Backup",
+        "Importing a backup will replace your current data and settings. This cannot be undone. Proceed?",
+        "Import",
+        async () => {
+          try {
+            await importBackup(db, backup);
 
-      // Update local state and UI
-      settings = await getSettings(db);
-      if (els.installationDate) {
-        els.installationDate.value = settings.installationDate || "";
-      }
-
-      await refresh("Backup restored successfully. Analytics have been recalculated.");      
+            // Update local state and UI
+            settings = await getSettings(db);
+            if (els.installationDate) {
+              els.installationDate.value = settings.installationDate || "";
+            }
+            if (els.solarCapacity) {
+              els.solarCapacity.value = settings.solarCapacity || "";
+              els.solarCapacityUnit.value = settings.solarCapacityUnit || "kW";
+            }
+            
+            await refresh("Backup restored successfully. Analytics have been recalculated.");
+            navigate("screen-home");
+          } catch (err) {
+            console.error("Import error:", err);
+            if (els.entryMessage) {
+              els.entryMessage.textContent = "Import failed: " + err.message;
+              els.entryMessage.style.color = "var(--danger)";
+            } else {
+              showAlert("Import Failed", err.message);
+            }
+          } finally {
+            els.importData.value = "";
+          }
+        }
+      );
     } catch (err) {
-      console.error("Import failed:", err);
-      if (els.entryMessage) {
-        els.entryMessage.textContent = "Import failed: " + err.message;
-        els.entryMessage.style.color = "var(--danger)";
-      } else {
-        alert("Import failed: " + err.message);
-      }
-    } finally {
+      console.error("File read error:", err);
+      showAlert("Import Failed", err.message);
       els.importData.value = "";
     }
   });
@@ -485,8 +505,15 @@ function renderReadings() {
         message = "Intraday observation deleted. Historical metrics remain unchanged.";
       }
       
-      await deleteReading(db, id);
-      await refresh(message);
+      showDangerConfirm(
+        "Delete Reading",
+        "Are you sure you want to delete this reading? " + message,
+        "Delete",
+        async () => {
+          await deleteReading(db, id);
+          await refresh(message);
+        }
+      );
     });
   });
 }

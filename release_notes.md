@@ -1,6 +1,27 @@
-# Solar Prophecy v1.5.7 - UX & Navigation Polish
+# Solar Prophecy v1.5.8 - Native Dialog Overhaul
 
 ## SECTION 1 — Solar Prophecy Release Notes
+
+### v1.5.8
+
+**What changed:**
+- Prevented future WebView dialog regressions by creating a reusable dialog abstraction service.
+- Audited and replaced all Android-facing browser dialogs (`alert()`, `confirm()`, `prompt()`) with Solar Prophecy themed application dialogs.
+- Updated import, delete, and update checker flows to use the new dialog service.
+
+**Why it changed:**
+- To ensure Android users experience Solar Prophecy as a fully native application rather than a wrapped website, avoiding generic browser alerts and "The page says..." modals.
+
+**User impact:**
+- Improved aesthetics and consistency during warnings, confirmations, and alerts, matching the selected app theme (Light/Dark/System).
+- Clearer confirmation prompts for dangerous actions like importing backups and deleting readings.
+
+**Technical impact:**
+- Developed `dialog.js`, exposing `showAlert` and `showDangerConfirm` functions.
+- Integrated into `app.js` and `updates.js` flows.
+- Eliminated all direct calls to `window.alert()`, `window.confirm()`, and `window.prompt()`.
+
+### v1.5.7
 
 **What changed**
 - The Home page Reading Entry block has been elevated to directly below the "kWh Today" gauge, eliminating unnecessary scrolling to input records.

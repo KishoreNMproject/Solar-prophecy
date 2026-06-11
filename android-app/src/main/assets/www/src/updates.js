@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "1.5.7";
+export const CURRENT_VERSION = "1.5.8";
 export const BUILD_DATE = "June 11, 2026";
 
 export const RELEASE_NOTES = [
@@ -15,6 +15,8 @@ export const RELEASE_NOTES = [
   "UI cleanup and organization"
 ];
 const GITHUB_REPO = "KishoreNMproject/Solar-prophecy";
+
+import { showAlert } from "./dialog.js";
 
 let activeUpdateModal = null;
 let currentUpdateRelease = null;
@@ -75,7 +77,7 @@ export async function manualUpdateCheck() {
     return latestVersion;
   } catch (err) {
     console.error(err);
-    alert("Failed to check for updates.");
+    showAlert("Update Check Failed", "Could not reach the update server. Please check your internet connection and try again.");
     return null;
   }
 }
