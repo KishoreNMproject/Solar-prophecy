@@ -1,20 +1,19 @@
-# Solar Prophecy v1.5.0
+# Solar Prophecy Release Notes
 
-## What changed
-* Fully redesigned the Daily Closing Record architecture to preserve all valid historical production data.
-* Implemented formal day-state generation windows (Early, Peak, Late, Post-Sunset, Closed Day).
-* Synchronized model data between actual tracked days and raw observations to fix counting discrepancies.
-* Corrected live-today generation calculations to resolve NaN values appearing on the dashboard.
-* Established a formal Release Discipline policy requiring signed APK generation, GitHub release creation, and structured changelogs for all future development.
+## Version 1.4.2 (Patch)
+**Theme System Fixes & Architecture Consistency**
 
-## Why it changed
-* A regression was silently deleting initial baseline generation and dropping valid intraday deltas, causing the lifetime production sum to be inaccurate.
-* The formal Git release discipline was necessary to prevent untested regressions from shipping to production.
+### What changed
+* Reverted Android `minSdk` 28 (Android 9) base theme to `Theme.Material.Light.NoActionBar` to prevent compilation errors.
+* Introduced a dedicated `values-v29/styles.xml` file configured with `Theme.DeviceDefault.DayNight` to explicitly enforce `prefers-color-scheme` media queries to automatically trigger in the WebView.
 
-## User impact
-* Lifetime generation metrics and Daily Record counts are now strictly accurate.
-* The dashboard no longer occasionally fails with NaN errors during active production windows.
+### Why it changed
+* Android devices set to Dark Mode were rendering the Day (Light) Theme on the Web UI when set to "Follow Device Theme" due to the Android Activity forcefully overriding the system preference into Light Mode.
+* WebView requires an Activity wrapped in a `DayNight` theme configuration in order to propagate the `prefers-color-scheme: dark` attribute natively without Javascript/WebView workarounds.
 
-## Technical impact
-* `analytics.js` now derives actual days correctly including initial baseline records.
-* Git and Release validation is strictly enforced.
+### User impact
+* Android 10+ (API 29+) users will now experience correct and fully automatic "Follow Device Theme" switching, resolving the dark-mode inconsistency bug.
+
+### Technical impact
+* Fixed Android theme inheritance for the native Android shell without bumping minSdk, maintaining API 28 backwards compatibility.
+* Aligned Android and Web-Reference implementations.

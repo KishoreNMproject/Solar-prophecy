@@ -95,7 +95,7 @@ Include: Added, Changed, Fixed, Removed (based on actual Git diff history).
 
 Every release must include:
 * Version tag
-* APK attachment
+* APK attachment (Must be renamed to Solar_Prophecy_V_x.y.z.apk instead of app-release.apk)
 * Human-written release notes
 * Auto-generated changelog
 * Build summary
@@ -117,36 +117,41 @@ Use semantic-style versioning for all Solar Prophecy releases.
 
 ### PATCH Releases (x.x.Z)
 
-Use for:
+Use when:
+- Fixing regressions
+- Fixing bugs
+- Fixing migration issues
+- Fixing analytics errors
+- Fixing data integrity problems
+- Fixing NaN calculations
+- Fixing dashboard inconsistencies
+- Fixing Daily Closing Record implementation bugs
+- Fixing forecasting bugs
+- Fixing UI issues
+- Fixing Android issues
 
-* Bug fixes
-* UI adjustments
-* Text corrections
-* Theme tweaks
-* Minor OTA improvements
-* Small usability enhancements
-
-Examples:
-
-* 1.3.6 → 1.3.7
-* 1.3.7 → 1.3.8
-
-### MINOR Releases (x.Y.x)
-
-Use for:
-
-* New features
-* Significant UI redesigns
-* New settings
-* New analytics capabilities
-* New forecast features
-* New import/export capabilities
-* New update-system functionality
+Even if many files change, if the release is primarily correcting behavior of an already-existing feature, it remains a PATCH release.
 
 Examples:
 
-* 1.3.8 → 1.4.0
-* 1.4.0 → 1.5.0
+* 1.4.0 → 1.4.1
+* 1.4.1 → 1.4.2
+
+### MINOR Releases (x.Y.0)
+
+Use only when introducing genuinely new capabilities such as:
+
+- New forecasting systems
+- New analytics modules
+- New storage mechanisms
+- New synchronization features
+- New OTA capabilities
+- New dashboard modules
+- New user workflows
+
+Do not upgrade to a new minor version merely because a fix was technically complex.
+When uncertain: PATCH is preferred over MINOR.
+Only recommend a MINOR release when a new capability is introduced.
 
 ### MAJOR Releases (X.x.x)
 
