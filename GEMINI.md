@@ -41,54 +41,75 @@ A debug APK is not an acceptable deliverable.
 4. **Premature Long-range Projections:** Annual forecasts appear with only a few records.
 5. **Misleading Visualizations:** Charts generate representations despite insufficient data.
 
-# Android Build Completion Rules
+# GIT & RELEASE DISCIPLINE
 
-Solar Prophecy is an Android application.
+Solar Prophecy uses a release-driven workflow.
 
-A task is NOT considered complete merely because source code was modified.
+A task is NOT complete merely because:
+* Source code was modified.
+* Tests passed.
+* APK was generated.
 
-For every completed feature, bug fix, UI change, analytics change, storage change, or architecture change:
+A task is only complete after:
+1. Source changes are implemented.
+2. Validation succeeds.
+3. Signed Release APK is generated.
+4. Changes are committed to Git.
+5. Changes are pushed to GitHub.
+6. A GitHub Release is created.
+7. Release notes are generated.
 
-Required completion checklist:
+## REQUIRED POST-IMPLEMENTATION WORKFLOW
 
-1. Build web application.
-2. Verify web build succeeds.
-3. Sync updated web assets into Android project.
-4. Verify APK generation succeeds.
-5. Report APK output path.
-6. If requested for release:
-
-   * Build signed Release APK.
-   * Report output paths.
-
-   Build Requirements
-
-After implementation:
+After every successful fix, feature, analytics change, architecture change, Android change, storage change, forecasting change, or UI change, execute:
 
 1. Build web assets.
-2. Sync Android assets.
-3. Build Signed Release APK only.
-4. Report release APK path.
-5. Do not generate Debug APK unless explicitly requested.
+2. Verify web build succeeds.
+3. Sync Android assets.
+4. Build Signed Release APK.
+5. Verify build success.
+6. Commit changes.
+7. Push to GitHub.
+8. Create Git tag.
+9. Create GitHub Release.
+10. Generate release notes.
 
-Do not claim a task is complete until the Android build succeeds.
+Only then may the task be considered complete.
 
-If the Android build fails:
+## CHANGELOG POLICY
 
-* Stop.
-* Report the build failure.
-* Explain the error.
-* Do not mark the task complete.
+Every release must contain TWO sections.
 
-Expected deliverables after implementation:
+**SECTION 1 — Solar Prophecy Release Notes**
+Human-written summary:
+* What changed
+* Why it changed
+* User impact
+* Technical impact
 
-* Updated source code.
-* Updated web build.
-* Updated Android build.
-* APK path.
-* Build summary.
+**SECTION 2 — Auto-Generated Git Diff Changelog**
+Generate automatically using: Previous Tag → Current Tag
+Include: Added, Changed, Fixed, Removed (based on actual Git diff history).
 
-A source code modification without a successful Android build is considered incomplete.
+## GITHUB RELEASE REQUIREMENTS
+
+Every release must include:
+* Version tag
+* APK attachment
+* Human-written release notes
+* Auto-generated changelog
+* Build summary
+
+## FAILURE CONDITIONS
+
+A task is considered incomplete if:
+* Build succeeds but commit is missing.
+* Commit exists but push is missing.
+* Push exists but release is missing.
+* Release exists but changelog is missing.
+* APK exists but is not attached to release.
+
+Completion requires: Code + Build + Commit + Push + Release + Changelog.
 
 ## Versioning Policy
 
