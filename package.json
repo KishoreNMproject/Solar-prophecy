@@ -1,6 +1,6 @@
 {
   "name": "solar-prophecy",
-  "version": "1.4.2",
+  "version": "1.5.01",
   "private": true,
   "description": "Self-learning offline solar analytics engine for web and Android.",
   "type": "module",
