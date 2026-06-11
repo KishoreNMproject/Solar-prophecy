@@ -661,15 +661,37 @@ function rollingAverage(days, windowSize) {
 }
 
 function renderDailyHistory() {
-  const days = [...model.actualDailySeries].sort((a, b) => b.date.localeCompare(a.date));
-  els.dailyHistoryTable.innerHTML = days
+  const dcr = model.dailyClosingRecords;
+  const history = [];
+  
+  if (dcr.length > 0) {
+    const firstReading = model.readings[0];
+    if (firstReading) {
+      const delta = dcr[0].value - firstReading.virtualValue;
+      if (delta > 0) {
+        history.push({ date: dcr[0].date, generation: delta });
+      }
+    }
+    
+    for (let i = 1; i < dcr.length; i++) {
+      history.push({
+        date: dcr[i].date,
+        generation: dcr[i].value - dcr[i-1].value
+      });
+    }
+  }
+  
+  history.sort((a, b) => b.date.localeCompare(a.date));
+  
+  els.dailyHistoryTable.innerHTML = history
+    .filter(item => item.generation > 0)
     .map(
-      (day) => `
+      (item) => `
       <tr>
         <td style="font-size:0.85rem; font-weight:500;">
-          ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(day.date))}
+          ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(item.date))}
         </td>
-        <td style="font-weight:700;">${kwh(day.generation)}</td>
+        <td style="font-weight:700;">${kwh(item.generation)}</td>
       </tr>`
     )
     .join("");

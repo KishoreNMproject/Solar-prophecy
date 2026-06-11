@@ -43,31 +43,6 @@
 
       <!-- SCREEN: HOME -->
       <div class="screen active" id="screen-home">
-        <section class="entry-panel" style="grid-template-columns: 1fr;">
-          <form id="readingForm" class="reading-form">
-            <input type="hidden" id="readingId">
-            <label>
-              <span>Cumulative inverter reading</span>
-              <input id="readingValue" type="number" min="0" step="0.001" inputmode="decimal" required placeholder="kWh">
-            </label>
-            <div class="time-mode">
-              <label class="checkbox-row">
-                <input id="useCustomTimestamp" type="checkbox">
-                <span>Custom date and time</span>
-              </label>
-              <p id="autoTimestampLabel">Using current system date and time when saved.</p>
-            </div>
-            <label id="timestampField" hidden>
-              <span>Reading date and time</span>
-              <input id="readingTimestamp" type="datetime-local" required>
-            </label>
-            <div class="form-actions">
-              <button class="primary" type="submit">Save reading</button>
-              <button class="secondary" type="button" id="cancelEdit" hidden>Cancel edit</button>
-            </div>
-            <p class="form-note" id="entryMessage">Enter only the inverter total. The model learns the rest.</p>
-          </form>
-        </section>
         <section class="gauge-container">
           <div class="hero-left">
             <div id="celestialWidget" class="celestial-widget" aria-hidden="true"></div>
@@ -98,13 +73,6 @@
           </div>
         </section>
 
-        <section id="lowGenerationWarning" class="warning" style="border-left-color: var(--rose); color: var(--rose);" hidden>
-          <strong>Low Generation Detected</strong>
-          <p style="margin: 8px 0 0 0; font-size: 0.8rem; opacity: 0.9;">Today's output is significantly below expected levels. Possible causes include cloud cover, dust, shading, or system issues. Monitor future readings to determine if this is persistent.</p>
-        </section>
-
-        <section id="qualityWarning" class="warning" hidden></section>
-
         <section class="model-status-panel">
           <div class="model-status-header">
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -117,6 +85,39 @@
             <!-- Stats will be injected here -->
           </div>
         </section>
+
+        <section class="entry-panel" style="grid-template-columns: 1fr;">
+          <form id="readingForm" class="reading-form">
+            <input type="hidden" id="readingId">
+            <label>
+              <span>Cumulative inverter reading</span>
+              <input id="readingValue" type="number" min="0" step="0.001" inputmode="decimal" required placeholder="kWh">
+            </label>
+            <div class="time-mode">
+              <label class="checkbox-row">
+                <input id="useCustomTimestamp" type="checkbox">
+                <span>Custom date and time</span>
+              </label>
+              <p id="autoTimestampLabel">Using current system date and time when saved.</p>
+            </div>
+            <label id="timestampField" hidden>
+              <span>Reading date and time</span>
+              <input id="readingTimestamp" type="datetime-local" required>
+            </label>
+            <div class="form-actions">
+              <button class="primary" type="submit">Save reading</button>
+              <button class="secondary" type="button" id="cancelEdit" hidden>Cancel edit</button>
+            </div>
+            <p class="form-note" id="entryMessage">Enter only the inverter total. The model learns the rest.</p>
+          </form>
+        </section>
+
+        <section id="lowGenerationWarning" class="warning" style="border-left-color: var(--rose); color: var(--rose);" hidden>
+          <strong>Low Generation Detected</strong>
+          <p style="margin: 8px 0 0 0; font-size: 0.8rem; opacity: 0.9;">Today's output is significantly below expected levels. Possible causes include cloud cover, dust, shading, or system issues. Monitor future readings to determine if this is persistent.</p>
+        </section>
+
+        <section id="qualityWarning" class="warning" hidden></section>
 
         <section class="metrics-grid" id="metricsGrid"></section>
       </div>
