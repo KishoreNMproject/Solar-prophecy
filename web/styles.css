@@ -202,15 +202,39 @@ body {
 .settings-row.full-width { grid-template-columns: 1fr; }
 
 /* Control Styling (Inheriting Theme) */
-input, select {
+input:not([type="checkbox"]):not([type="radio"]), select {
   width: 100%; padding: 14px; border-radius: 14px;
   border: 1px solid var(--line); background: var(--panel-strong);
   color: var(--ink); font-size: 1rem; font-weight: 500;
   transition: border-color 0.2s, background 0.2s;
   appearance: none; -webkit-appearance: none;
 }
-input:focus, select:focus { outline: none; border-color: var(--brand); background: var(--bg); }
+input:not([type="checkbox"]):not([type="radio"]):focus, select:focus { outline: none; border-color: var(--brand); background: var(--bg); }
 input::placeholder { color: var(--muted); opacity: 0.6; }
+
+input[type="checkbox"] {
+  appearance: auto;
+  -webkit-appearance: auto;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--brand);
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+
+.checkbox-row span {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+}
 
 select option {
   background: var(--bg);
