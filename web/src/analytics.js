@@ -145,7 +145,9 @@ export function buildSolarModel(readings, settings = {}, now = new Date()) {
   
   const forecastConfidence = computeConfidence(actualDays, estimatedDays);
   const patterns = learnPatterns(actualDays); // Train on actual DCRs only
-  const forecasts = buildForecasts(actualDays, patterns, forecastConfidence, now, capacityKW);
+  
+  const liveTodayGeneration = computeLiveTodayGeneration(allReadings, dailyClosingRecords, now);
+  const forecasts = buildForecasts(actualDays, patterns, forecastConfidence, now, capacityKW, liveTodayGeneration);
   const aggregates = aggregateSeries(actualDays); // Validated metrics only consume actual DCRs
   
   const dataQuality = buildDataQuality(allReadings, dailyClosingRecords, actualDays, estimatedDays, forecastConfidence);
@@ -226,7 +228,7 @@ function learnPatterns(days) {
   return { averageDaily: avg, variability, weekday, monthly, trend };
 }
 
-function buildForecasts(actualDays, patterns, baseConfidence, now, capacityKW) {
+function buildForecasts(actualDays, patterns, baseConfidence, now, capacityKW, liveTodayGeneration = 0) {
   const dayCount = actualDays.length;
   const lastDate = actualDays.length ? actualDays[actualDays.length - 1].date : toDateKey(now);
   
@@ -251,7 +253,13 @@ function buildForecasts(actualDays, patterns, baseConfidence, now, capacityKW) {
   for (let i = 1; i <= 7; i += 1) {
     const date = addDays(lastDate, i);
     const d = fromDateKey(date);
-    const predicted = predictDay(patterns, d, actualDays.length + i, capacityKW);
+    let predicted = predictDay(patterns, d, actualDays.length + i, capacityKW);
+    
+    if (date === toDateKey(now) && predicted < liveTodayGeneration) {
+      console.warn(`Forecast continuity adjusted: baseline (${round(predicted)}) < actual (${round(liveTodayGeneration)}). Rebuilding forecast from reality.`);
+      predicted = liveTodayGeneration;
+    }
+
     sevenDay.push({
       date,
       generation: round(predicted),
@@ -349,12 +357,8 @@ function buildDataQuality(readings, dailyClosingRecords, actualDays, estimatedDa
   };
 }
 
-function buildDashboard(days, dailyClosingRecords, readings, forecasts, dataQuality, settings, now, patterns, capacityKW) {
+function computeLiveTodayGeneration(readings, dailyClosingRecords, now) {
   const today = toDateKey(now);
-  const todayPhase = getSolarPhase(now, now);
-  const isDayClosed = todayPhase === SOLAR_PHASE.CLOSED || todayPhase === SOLAR_PHASE.POST;
-  
-  // LIVE METRICS
   const todayReadings = readings.filter(r => toDateKey(r.timestamp) === today);
   let liveTodayGeneration = 0;
   if (todayReadings.length > 0) {
@@ -370,6 +374,16 @@ function buildDashboard(days, dailyClosingRecords, readings, forecasts, dataQual
       liveTodayGeneration = Math.max(0, lastReading.virtualValue - lastDCR.value);
     }
   }
+  return liveTodayGeneration;
+}
+
+function buildDashboard(days, dailyClosingRecords, readings, forecasts, dataQuality, settings, now, patterns, capacityKW) {
+  const today = toDateKey(now);
+  const todayPhase = getSolarPhase(now, now);
+  const isDayClosed = todayPhase === SOLAR_PHASE.CLOSED || todayPhase === SOLAR_PHASE.POST;
+  
+  // LIVE METRICS
+  const liveTodayGeneration = computeLiveTodayGeneration(readings, dailyClosingRecords, now);
 
   const last7 = days.filter(d => d.kind === "actual").slice(-7);
   const last30 = days.filter(d => d.kind === "actual").slice(-30);

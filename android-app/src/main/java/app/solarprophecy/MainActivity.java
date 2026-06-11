@@ -24,6 +24,8 @@ import android.widget.Toast;
 
 import androidx.core.content.FileProvider;
 import androidx.webkit.WebViewAssetLoader;
+import androidx.webkit.ServiceWorkerClientCompat;
+import androidx.webkit.ServiceWorkerControllerCompat;
 
 import java.io.File;
 import java.io.OutputStream;
@@ -61,6 +63,14 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+        });
+        
+        ServiceWorkerControllerCompat swController = ServiceWorkerControllerCompat.getInstance();
+        swController.setServiceWorkerClient(new ServiceWorkerClientCompat() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebResourceRequest request) {
                 return assetLoader.shouldInterceptRequest(request.getUrl());
             }
         });
