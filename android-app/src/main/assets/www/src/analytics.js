@@ -1,11 +1,10 @@
 const DAY_MS = 86_400_000;
 
 export const SOLAR_PHASE = {
-  DAWN: "Dawn",
-  RAMP_UP: "Ramp-Up",
-  PEAK: "Peak Production",
-  DECLINE: "Decline",
-  POST_SUNSET: "Post-Sunset Validation",
+  EARLY: "Early Generation Window",
+  PEAK: "Peak Generation Window",
+  LATE: "Late Generation Window",
+  POST: "Post-Generation Window",
   CLOSED: "Closed Day"
 };
 
@@ -58,16 +57,14 @@ export function getSolarPhase(date, now = new Date()) {
   const nKey = toDateKey(n);
   
   if (dKey < nKey) return SOLAR_PHASE.CLOSED;
-  if (dKey > nKey) return SOLAR_PHASE.DAWN; // Future date? Treat as Dawn.
+  if (dKey > nKey) return SOLAR_PHASE.EARLY; // Future date? Treat as Early.
 
   const hour = d.getHours();
   
-  if (hour < 8) return SOLAR_PHASE.DAWN;
-  if (hour < 11) return SOLAR_PHASE.RAMP_UP;
+  if (hour < 10) return SOLAR_PHASE.EARLY;
   if (hour < 15) return SOLAR_PHASE.PEAK;
-  if (hour < 18) return SOLAR_PHASE.DECLINE;
-  if (hour < 21) return SOLAR_PHASE.POST_SUNSET;
-  return SOLAR_PHASE.CLOSED;
+  if (hour < 19) return SOLAR_PHASE.LATE;
+  return SOLAR_PHASE.POST;
 }
 
 export function normalizeReadings(readings) {
@@ -109,21 +106,12 @@ export function getDailyClosingRecords(readings, now = new Date()) {
     const date = toDateKey(reading.timestamp);
     const phase = getSolarPhase(reading.timestamp, now);
     
-    // Only accept readings that are in POST_SUNSET or CLOSED phase for that day
+    // Only accept readings that are in POST or CLOSED phase for that day
     // or if the day is before "now"
-    if (date < nKey || phase === SOLAR_PHASE.POST_SUNSET || phase === SOLAR_PHASE.CLOSED) {
-      const existing = byDate.get(date);
-      if (existing) {
-        // Handle Duplicate Closing Record Handling
-        // First valid post-sunset reading becomes the Daily Closing Record.
-        // Later entries are confirmations if they have the same value.
-        // If they have a different (higher) value, we take the latest.
-        if (reading.virtualValue > existing.virtualValue) {
-           byDate.set(date, reading);
-        }
-      } else {
-        byDate.set(date, reading);
-      }
+    if (date < nKey || phase === SOLAR_PHASE.POST || phase === SOLAR_PHASE.CLOSED) {
+      // The latest observation becomes the Daily Closing Record.
+      // Since normalized is sorted by timestamp, simply setting it overwrites with the latest.
+      byDate.set(date, reading);
     }
   }
   
@@ -143,7 +131,7 @@ export function getDailyClosingRecords(readings, now = new Date()) {
 export function buildSolarModel(readings, settings = {}, now = new Date()) {
   const allReadings = applyEpochs(normalizeReadings(readings));
   const dailyClosingRecords = getDailyClosingRecords(readings, now);
-  const dailySeries = buildDailySeries(dailyClosingRecords);
+  const dailySeries = buildDailySeries(dailyClosingRecords, allReadings);
   
   // Capacity parsing
   const capacityValue = Number(settings.solarCapacity) || 0;
@@ -161,7 +149,7 @@ export function buildSolarModel(readings, settings = {}, now = new Date()) {
   const aggregates = aggregateSeries(actualDays); // Validated metrics only consume actual DCRs
   
   const dataQuality = buildDataQuality(allReadings, dailyClosingRecords, actualDays, estimatedDays, forecastConfidence);
-  const dashboard = buildDashboard(modelDays, allReadings, forecasts, dataQuality, settings, now, patterns, capacityKW);
+  const dashboard = buildDashboard(modelDays, dailyClosingRecords, allReadings, forecasts, dataQuality, settings, now, patterns, capacityKW);
 
   return {
     readings: allReadings,
@@ -179,9 +167,40 @@ export function buildSolarModel(readings, settings = {}, now = new Date()) {
   };
 }
 
-function buildDailySeries(closingRecords) {
-  if (closingRecords.length < 2) return [];
+function buildDailySeries(closingRecords, allReadings) {
+  if (closingRecords.length === 0) return [];
   const days = [];
+
+  const firstDCR = closingRecords[0];
+  const firstReading = allReadings[0];
+  
+  if (firstReading) {
+    const startKey = toDateKey(firstReading.timestamp);
+    const span = daysBetween(startKey, firstDCR.date);
+    const delta = firstDCR.value - firstReading.virtualValue;
+    
+    if (span === 0) {
+      days.push({
+        date: firstDCR.date,
+        generation: round(Math.max(0, delta)),
+        kind: "actual",
+        source: "initial closing record",
+        confidence: 1
+      });
+    } else if (span > 0) {
+      const perDay = delta > 0 ? delta / span : 0;
+      for (let offset = 1; offset <= span; offset += 1) {
+        const date = addDays(startKey, offset);
+        days.push({
+          date,
+          generation: round(perDay),
+          kind: offset === span ? "actual" : "estimated",
+          source: offset === span ? "initial closing record" : "gap interpolation",
+          confidence: offset === span ? 1 : 0.45
+        });
+      }
+    }
+  }
 
   for (let i = 1; i < closingRecords.length; i += 1) {
     const previous = closingRecords[i - 1];
@@ -346,10 +365,10 @@ function buildDataQuality(readings, dailyClosingRecords, actualDays, estimatedDa
   };
 }
 
-function buildDashboard(days, readings, forecasts, dataQuality, settings, now, patterns, capacityKW) {
+function buildDashboard(days, dailyClosingRecords, readings, forecasts, dataQuality, settings, now, patterns, capacityKW) {
   const today = toDateKey(now);
   const todayPhase = getSolarPhase(now, now);
-  const isDayClosed = todayPhase === SOLAR_PHASE.CLOSED || todayPhase === SOLAR_PHASE.POST_SUNSET;
+  const isDayClosed = todayPhase === SOLAR_PHASE.CLOSED || todayPhase === SOLAR_PHASE.POST;
   
   // LIVE METRICS
   const todayReadings = readings.filter(r => toDateKey(r.timestamp) === today);
@@ -360,11 +379,11 @@ function buildDashboard(days, readings, forecasts, dataQuality, settings, now, p
     liveTodayGeneration = lastOfToday.virtualValue - (firstOfToday.virtualValue - (firstOfToday.rawValue > 0 ? (firstOfToday.virtualValue - firstOfToday.rawValue) : 0));
     
     // Better calculation: find the last DCR before today
-    const lastDCR = days.filter(d => d.date < today && d.kind === "actual").pop();
+    const lastDCR = dailyClosingRecords.filter(dcr => dcr.date < today).pop();
     if (lastDCR) {
       // This is a bit complex due to epochs, but virtualValue is cumulative
       const lastReading = todayReadings[todayReadings.length - 1];
-      liveTodayGeneration = Math.max(0, lastReading.virtualValue - lastDCR.virtualValue);
+      liveTodayGeneration = Math.max(0, lastReading.virtualValue - lastDCR.value);
     }
   }
 

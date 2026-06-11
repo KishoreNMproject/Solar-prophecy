@@ -12,7 +12,7 @@ const model = buildSolarModel(readings, { installationDate: "2026" }, new Date("
 assert.equal(model.readings.length, 3);
 assert.equal(model.dailyClosingRecords.length, 3);
 assert.equal(model.estimatedDailySeries.length, 3);
-assert.equal(model.actualDailySeries.length, 2);
+assert.equal(model.actualDailySeries.length, 3);
 assert.equal(model.dataQuality.missingDayCount, 3);
 assert.equal(model.actualDailySeries.find((day) => day.date === "2026-06-05").generation, 5);
 assert.equal(model.actualDailySeries.find((day) => day.date === "2026-06-06").generation, 8);
