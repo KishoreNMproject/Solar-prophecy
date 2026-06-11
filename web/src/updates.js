@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "1.5.01";
+export const CURRENT_VERSION = "1.5.02";
 const GITHUB_REPO = "KishoreNMproject/Solar-prophecy";
 
 let activeUpdateModal = null;

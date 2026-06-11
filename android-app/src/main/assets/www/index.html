@@ -18,7 +18,7 @@
         <li><button data-target="screen-home" class="nav-btn active">Home</button></li>
         <li><button data-target="screen-graphs" class="nav-btn">Graphs</button></li>
         <li><button data-target="screen-history" class="nav-btn">History</button></li>
-        <li><button data-target="screen-savings" class="nav-btn">Daily Savings</button></li>
+        <li><button data-target="screen-daily-history" class="nav-btn">Daily Gen. History</button></li>
         <li><button data-target="screen-settings" class="nav-btn">Settings</button></li>
         <li><button id="navCheckUpdates" class="nav-btn">Check for Updates</button></li>
         <li><button id="navAbout" class="nav-btn">About</button></li>
@@ -43,6 +43,31 @@
 
       <!-- SCREEN: HOME -->
       <div class="screen active" id="screen-home">
+        <section class="entry-panel" style="grid-template-columns: 1fr;">
+          <form id="readingForm" class="reading-form">
+            <input type="hidden" id="readingId">
+            <label>
+              <span>Cumulative inverter reading</span>
+              <input id="readingValue" type="number" min="0" step="0.001" inputmode="decimal" required placeholder="kWh">
+            </label>
+            <div class="time-mode">
+              <label class="checkbox-row">
+                <input id="useCustomTimestamp" type="checkbox">
+                <span>Custom date and time</span>
+              </label>
+              <p id="autoTimestampLabel">Using current system date and time when saved.</p>
+            </div>
+            <label id="timestampField" hidden>
+              <span>Reading date and time</span>
+              <input id="readingTimestamp" type="datetime-local" required>
+            </label>
+            <div class="form-actions">
+              <button class="primary" type="submit">Save reading</button>
+              <button class="secondary" type="button" id="cancelEdit" hidden>Cancel edit</button>
+            </div>
+            <p class="form-note" id="entryMessage">Enter only the inverter total. The model learns the rest.</p>
+          </form>
+        </section>
         <section class="gauge-container">
           <div class="hero-left">
             <div id="celestialWidget" class="celestial-widget" aria-hidden="true"></div>
@@ -141,31 +166,7 @@
 
       <!-- SCREEN: HISTORY -->
       <div class="screen" id="screen-history" hidden>
-        <section class="entry-panel" style="grid-template-columns: 1fr;">
-          <form id="readingForm" class="reading-form">
-            <input type="hidden" id="readingId">
-            <label>
-              <span>Cumulative inverter reading</span>
-              <input id="readingValue" type="number" min="0" step="0.001" inputmode="decimal" required placeholder="kWh">
-            </label>
-            <div class="time-mode">
-              <label class="checkbox-row">
-                <input id="useCustomTimestamp" type="checkbox">
-                <span>Custom date and time</span>
-              </label>
-              <p id="autoTimestampLabel">Using current system date and time when saved.</p>
-            </div>
-            <label id="timestampField" hidden>
-              <span>Reading date and time</span>
-              <input id="readingTimestamp" type="datetime-local" required>
-            </label>
-            <div class="form-actions">
-              <button class="primary" type="submit">Save reading</button>
-              <button class="secondary" type="button" id="cancelEdit" hidden>Cancel edit</button>
-            </div>
-            <p class="form-note" id="entryMessage">Enter only the inverter total. The model learns the rest.</p>
-          </form>
-        </section>
+
 
         <section class="split">
           <article class="table-panel">
@@ -197,21 +198,25 @@
         </section>
       </div>
 
-      <!-- SCREEN: SAVINGS -->
-      <div class="screen" id="screen-savings" hidden>
-        <section class="model-status-panel">
-          <div class="model-status-header">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <h2>Financial Insights</h2>
+      <!-- SCREEN: DAILY HISTORY -->
+      <div class="screen" id="screen-daily-history" hidden>
+        <section class="split">
+          <article class="table-panel">
+            <div class="section-heading">
+              <h2>Daily Generation History</h2>
             </div>
-          </div>
-          <div id="savingsLearning" class="learning-placeholder" hidden>
-            <p>Learning Phase</p>
-            <span>Insufficient data for savings calculations...</span>
-          </div>
-          <div class="status-stats" id="savingsStats">
-            <!-- Savings injected here -->
-          </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Final Generation</th>
+                  </tr>
+                </thead>
+                <tbody id="dailyHistoryTable"></tbody>
+              </table>
+            </div>
+          </article>
         </section>
       </div>
 
@@ -226,9 +231,7 @@
               <div class="summary-group">
                 <p>Installation Year: <strong id="yearDisplay">--</strong></p>
               </div>
-              <div class="summary-group">
-                <p>Electricity Rate: <strong id="rateDisplay">--</strong></p>
-              </div>
+
               <div class="summary-group">
                 <p>Theme: <strong id="activeThemeDisplay">--</strong></p>
               </div>
@@ -256,12 +259,7 @@
                   </div>
                 </label>
               </div>
-              <div class="settings-row full-width" style="margin-top: 16px;">
-                <label>
-                  <span>Electricity Rate ($/kWh)</span>
-                  <input id="electricityRate" type="number" min="0" step="0.001" placeholder="0.15">
-                </label>
-              </div>
+
 
               <div class="section-label" style="margin-top: 16px;">Appearance</div>
               <div class="settings-row full-width">

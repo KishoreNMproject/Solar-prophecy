@@ -68,8 +68,7 @@ const els = {
   navAbout: document.getElementById('navAbout'),
   rateDisplay: document.getElementById('rateDisplay'),
   electricityRate: document.getElementById('electricityRate'),
-  savingsLearning: document.getElementById('savingsLearning'),
-  savingsStats: document.getElementById('savingsStats')
+  dailyHistoryTable: document.getElementById('dailyHistoryTable')
 };
 
 init();
@@ -85,7 +84,6 @@ async function init() {
   els.solarCapacity.value = settings.solarCapacity || "";
   els.solarCapacityUnit.value = settings.solarCapacityUnit || "kW";
   els.themeMode.value = settings.themeMode || "system";
-  els.electricityRate.value = settings.electricityRate || "0.15";
   bindEvents();
   await refresh();
   checkForUpdates();
@@ -180,7 +178,6 @@ function bindEvents() {
     settings.installationDate = els.installationDate.value;
     settings.solarCapacity = els.solarCapacity.value;
     settings.solarCapacityUnit = els.solarCapacityUnit.value;
-    settings.electricityRate = els.electricityRate.value;
     settings.themeMode = els.themeMode.value;
     applyTheme(settings.themeMode);
     await saveSettings(db, settings);
@@ -199,7 +196,6 @@ function bindEvents() {
     els.installationDate.value = settings.installationDate || "";
     els.solarCapacity.value = settings.solarCapacity || "";
     els.solarCapacityUnit.value = settings.solarCapacityUnit || "kW";
-    els.electricityRate.value = settings.electricityRate || "0.15";
   });
 
 
@@ -280,7 +276,7 @@ async function refresh(message = "") {
     renderCharts();
     renderQuality();
     renderWarnings();
-    renderSavings();
+    renderDailyHistory();
     renderSettingsView();
     if (message) els.entryMessage.textContent = message;
   } catch (err) {
@@ -576,7 +572,6 @@ function renderSettingsView() {
   // Always keep the view summary updated
   els.capacityDisplay.textContent = hasCapacity ? `${settings.solarCapacity} ${settings.solarCapacityUnit}` : "--";
   els.yearDisplay.textContent = hasYear ? settings.installationDate : "--";
-  els.rateDisplay.textContent = "$" + (settings.electricityRate || "0.15") + "/kWh";
   els.activeThemeDisplay.textContent = getActiveThemeName();
   els.currentVersionDisplay.textContent = `v${CURRENT_VERSION}`;
 
@@ -665,32 +660,17 @@ function rollingAverage(days, windowSize) {
   });
 }
 
-function renderSavings() {
-  const d = model.dashboard;
-  const q = model.dataQuality;
-  const rate = Number(settings.electricityRate) || 0.15;
-  
-  if (q.actualDayCount < 7) {
-    els.savingsLearning.hidden = false;
-    els.savingsStats.innerHTML = '';
-    return;
-  }
-  
-  els.savingsLearning.hidden = true;
-  
-  const stats = [
-    ["Today", "$" + (d.todayGeneration * rate).toFixed(2)],
-    ["7-Day Avg", "$" + (d.weeklyAverage * rate).toFixed(2)],
-    ["30-Day Avg", "$" + (d.monthlyAverage * rate).toFixed(2)],
-    ["Annual Est.", "$" + ((model.forecasts.annual?.generation || 0) * rate).toFixed(2)],
-    ["Lifetime", "$" + (d.lifetimeProduction * rate).toFixed(2)]
-  ];
-
-  els.savingsStats.innerHTML = stats
-    .map(([label, value]) => `
-      <div class="status-stat">
-        <span>${label}</span>
-        <strong>${value}</strong>
-      </div>`)
+function renderDailyHistory() {
+  const days = [...model.actualDailySeries].sort((a, b) => b.date.localeCompare(a.date));
+  els.dailyHistoryTable.innerHTML = days
+    .map(
+      (day) => `
+      <tr>
+        <td style="font-size:0.85rem; font-weight:500;">
+          ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(day.date))}
+        </td>
+        <td style="font-weight:700;">${kwh(day.generation)}</td>
+      </tr>`
+    )
     .join("");
 }
