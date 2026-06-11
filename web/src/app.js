@@ -127,12 +127,7 @@ function bindEvents() {
     els.navCheckUpdates.addEventListener("click", async () => {
       els.navCheckUpdates.textContent = "Checking...";
       els.navCheckUpdates.disabled = true;
-      const latest = await manualUpdateCheck();
-      if (latest) {
-        showAlert("Update Available", "New version available: v" + latest);
-      } else {
-        showAlert("Up to Date", "You are already running the latest version.");
-      }
+      await manualUpdateCheck();
       els.navCheckUpdates.textContent = "Check for Updates";
       els.navCheckUpdates.disabled = false;
       closeMenu();

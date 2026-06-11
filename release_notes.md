@@ -2,6 +2,28 @@
 
 ## SECTION 1 — Solar Prophecy Release Notes
 
+### v1.5.9
+
+**What changed:**
+- Resolved a logical regression where the update checker displayed both an "Update Available" and "Up to Date" dialog simultaneously.
+- Introduced proper semantic version comparison logic to replace lexicographical comparison.
+- Added comprehensive diagnostic logging for update flows.
+- Provided a finalized Android 17 emulator compatibility report.
+- Performed a final validation of the native dialog overhaul, confirming no `alert()`, `confirm()`, or `prompt()` calls remain exposed to Android users.
+
+**Why it changed:**
+- Displaying conflicting update states confuses users. Semantic versioning guarantees correct results regardless of double-digit version segments. 
+- "Android 17" failing behavior must be correctly attributed to either missing implementation or Android SDK constraints (`minSdk` blocks).
+
+**User impact:**
+- The update checker will now reliably present exactly one dialog describing the exact state: Update Available, Up to Date, or Development Build.
+- Android experience remains seamlessly native.
+
+**Technical impact:**
+- Refactored `manualUpdateCheck()` and isolated update modality into single-responsibility conditionals.
+- Created `compareVersions()` for proper semantic integer validation.
+- Completed comprehensive platform root cause analysis documenting minimum API restrictions.
+
 ### v1.5.8
 
 **What changed:**

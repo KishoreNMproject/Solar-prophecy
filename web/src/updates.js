@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "1.5.8";
+export const CURRENT_VERSION = "1.5.9";
 export const BUILD_DATE = "June 11, 2026";
 
 export const RELEASE_NOTES = [
@@ -45,7 +45,10 @@ export async function checkForUpdates() {
     const release = await response.json();
     const latestVersion = release.tag_name.replace(/^v/, "");
 
-    if (isNewerVersion(latestVersion, CURRENT_VERSION)) {
+    const cmp = compareVersions(latestVersion, CURRENT_VERSION);
+    console.log(`[Update Check] Local: ${CURRENT_VERSION}, Remote: ${latestVersion}, Result: ${cmp}`);
+
+    if (cmp === 1) {
       showUpdateModal(release, isAndroid);
     }
   } catch (err) {
@@ -61,14 +64,30 @@ export async function manualUpdateCheck() {
     const release = await response.json();
     const latestVersion = release.tag_name.replace(/^v/, "");
 
-    if (isNewerVersion(latestVersion, CURRENT_VERSION)) {
+    const cmp = compareVersions(latestVersion, CURRENT_VERSION);
+    console.log(`[Manual Update Check] Local: ${CURRENT_VERSION}, Remote: ${latestVersion}, Result: ${cmp}`);
+
+    if (cmp === 1) {
+      console.log("[Manual Update Check] Showing Update Available dialog.");
       showUpdateModal(release, isAndroid);
-    } else {
+    } else if (cmp === 0) {
+      console.log("[Manual Update Check] Showing Up To Date dialog.");
       renderGlassModal({
         icon: "✅",
         title: "Up to date",
         subtitle: "Software Status",
         contentHtml: `<p>You are running the latest version of Solar Prophecy (v${CURRENT_VERSION}).</p>`,
+        actions: [
+          { label: "Close", primary: true, onClick: (modal) => modal.remove() }
+        ]
+      });
+    } else {
+      console.log("[Manual Update Check] Showing Development Build dialog.");
+      renderGlassModal({
+        icon: "🛠️",
+        title: "Development Build",
+        subtitle: "Software Status",
+        contentHtml: `<p>You are running a pre-release or development version (v${CURRENT_VERSION}) newer than the latest public release (v${latestVersion}).</p>`,
         actions: [
           { label: "Close", primary: true, onClick: (modal) => modal.remove() }
         ]
@@ -107,14 +126,16 @@ export function showAboutModal() {
   });
 }
 
-function isNewerVersion(latest, current) {
-  const l = latest.split(".").map(Number);
-  const c = current.split(".").map(Number);
-  for (let i = 0; i < 3; i++) {
-    if (l[i] > (c[i] || 0)) return true;
-    if (l[i] < (c[i] || 0)) return false;
+function compareVersions(v1, v2) {
+  const p1 = String(v1).split(".").map(Number);
+  const p2 = String(v2).split(".").map(Number);
+  for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+    const num1 = p1[i] || 0;
+    const num2 = p2[i] || 0;
+    if (num1 > num2) return 1;
+    if (num1 < num2) return -1;
   }
-  return false;
+  return 0;
 }
 
 function showWhatsNew(isAndroid) {
