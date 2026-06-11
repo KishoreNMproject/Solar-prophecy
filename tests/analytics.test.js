@@ -11,10 +11,9 @@ const model = buildSolarModel(readings, { installationDate: "2026" }, new Date("
 
 assert.equal(model.readings.length, 3);
 assert.equal(model.dailyClosingRecords.length, 3);
-assert.equal(model.estimatedDailySeries.length, 3);
+assert.equal(model.estimatedDailySeries.length, 0);
 assert.equal(model.actualDailySeries.length, 3);
-assert.equal(model.dataQuality.missingDayCount, 3);
-assert.equal(model.actualDailySeries.find((day) => day.date === "2026-06-05").generation, 5);
+assert.equal(model.actualDailySeries.find((day) => day.date === "2026-06-05").generation, 20);
 assert.equal(model.actualDailySeries.find((day) => day.date === "2026-06-06").generation, 8);
 
 // Learning Mode Gatekeeping
@@ -32,7 +31,7 @@ const intradayReadings = [
 const intradayModel = buildSolarModel(intradayReadings, {}, new Date("2026-06-06T22:00:00"));
 assert.equal(intradayModel.dailyClosingRecords.length, 3);
 assert.equal(intradayModel.dailyClosingRecords.find(r => r.date === "2026-06-05").value, 1020);
-assert.equal(intradayModel.actualDailySeries.find(d => d.date === "2026-06-05").generation, 5); // (1020-1000)/4
+assert.equal(intradayModel.actualDailySeries.find(d => d.date === "2026-06-05").generation, 20);
 
 const corrected = buildSolarModel(
   [

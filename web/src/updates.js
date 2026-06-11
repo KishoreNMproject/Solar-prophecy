@@ -1,4 +1,4 @@
-export const CURRENT_VERSION = "1.5.6";
+export const CURRENT_VERSION = "1.5.7";
 export const BUILD_DATE = "June 11, 2026";
 
 export const RELEASE_NOTES = [
@@ -82,7 +82,7 @@ export async function manualUpdateCheck() {
 
 export function showAboutModal() {
   const contentHtml = `
-    <div style="max-height: 250px; overflow-y: auto; padding-right: 8px;">
+    <div style="padding-right: 8px;">
       <p style="font-size: 0.9rem; margin-bottom: 12px; color: var(--ink);">
         Solar Prophecy is a self-learning offline analytics engine that tracks, predicts, and evaluates your solar generation without the cloud.
       </p>

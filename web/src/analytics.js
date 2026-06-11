@@ -179,26 +179,14 @@ function buildDailySeries(closingRecords, allReadings) {
     const span = daysBetween(startKey, firstDCR.date);
     const delta = firstDCR.value - firstReading.virtualValue;
     
-    if (span === 0) {
+    if (span >= 0 && delta >= 0) {
       days.push({
         date: firstDCR.date,
-        generation: round(Math.max(0, delta)),
+        generation: round(delta),
         kind: "actual",
         source: "initial closing record",
         confidence: 1
       });
-    } else if (span > 0) {
-      const perDay = delta > 0 ? delta / span : 0;
-      for (let offset = 1; offset <= span; offset += 1) {
-        const date = addDays(startKey, offset);
-        days.push({
-          date,
-          generation: round(perDay),
-          kind: offset === span ? "actual" : "estimated",
-          source: offset === span ? "initial closing record" : "gap interpolation",
-          confidence: offset === span ? 1 : 0.45
-        });
-      }
     }
   }
 
@@ -212,17 +200,13 @@ function buildDailySeries(closingRecords, allReadings) {
 
     if (span <= 0 || delta < 0) continue;
 
-    const perDay = delta / span;
-    for (let offset = 1; offset <= span; offset += 1) {
-      const date = addDays(startKey, offset);
-      days.push({
-        date,
-        generation: round(perDay),
-        kind: offset === span ? "actual" : "estimated",
-        source: offset === span ? "daily closing record" : "gap interpolation",
-        confidence: offset === span ? 1 : 0.45
-      });
-    }
+    days.push({
+      date: current.date,
+      generation: round(delta),
+      kind: "actual",
+      source: "daily closing record",
+      confidence: 1
+    });
   }
 
   return days;

@@ -73,19 +73,6 @@
           </div>
         </section>
 
-        <section class="model-status-panel">
-          <div class="model-status-header">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <h2>Model Status</h2>
-              <div id="forecastStateDot" class="status-dot"></div>
-            </div>
-            <span id="forecastStateText">Learning</span>
-          </div>
-          <div class="status-stats" id="modelStatusStats">
-            <!-- Stats will be injected here -->
-          </div>
-        </section>
-
         <section class="entry-panel" style="grid-template-columns: 1fr;">
           <form id="readingForm" class="reading-form">
             <input type="hidden" id="readingId">
@@ -110,6 +97,19 @@
             </div>
             <p class="form-note" id="entryMessage">Enter only the inverter total. The model learns the rest.</p>
           </form>
+        </section>
+
+        <section class="model-status-panel">
+          <div class="model-status-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h2>Model Status</h2>
+              <div id="forecastStateDot" class="status-dot"></div>
+            </div>
+            <span id="forecastStateText">Learning</span>
+          </div>
+          <div class="status-stats" id="modelStatusStats">
+            <!-- Stats will be injected here -->
+          </div>
         </section>
 
         <section id="lowGenerationWarning" class="warning" style="border-left-color: var(--rose); color: var(--rose);" hidden>

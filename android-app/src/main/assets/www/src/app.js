@@ -66,6 +66,7 @@ const els = {
   closeNav: document.getElementById('closeNav'),
   navCheckUpdates: document.getElementById('navCheckUpdates'),
   navAbout: document.getElementById('navAbout'),
+  topbar: document.querySelector('.topbar'),
   rateDisplay: document.getElementById('rateDisplay'),
   electricityRate: document.getElementById('electricityRate'),
   dailyHistoryTable: document.getElementById('dailyHistoryTable')
@@ -140,6 +141,35 @@ function bindEvents() {
   els.navAbout.addEventListener("click", () => {
     showAboutModal();
     closeMenu();
+  });
+
+  // Smart Header Behavior
+  let lastScrollY = window.scrollY;
+  let scrollTicking = false;
+
+  window.addEventListener('scroll', () => {
+    if (!scrollTicking) {
+      window.requestAnimationFrame(() => {
+        const currentScrollY = window.scrollY;
+        
+        if (currentScrollY > 50) {
+          if (currentScrollY > lastScrollY) {
+            // Scrolling down
+            els.topbar.style.transform = 'translateY(-150%)';
+          } else {
+            // Scrolling up
+            els.topbar.style.transform = 'translateY(0)';
+          }
+        } else {
+          // At top
+          els.topbar.style.transform = 'translateY(0)';
+        }
+        
+        lastScrollY = currentScrollY;
+        scrollTicking = false;
+      });
+      scrollTicking = true;
+    }
   });
 
   els.form.addEventListener("submit", async (event) => {
