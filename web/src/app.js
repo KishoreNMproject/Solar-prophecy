@@ -555,6 +555,7 @@ function renderCharts() {
   // Daily Chart
   const daily = model.dailySeries.slice(-45).map((day) => ({ 
     value: day.generation, 
+    actualValue: day.actualValue || 0,
     kind: day.kind, 
     date: day.date,
     confidence: day.confidence
@@ -590,7 +591,8 @@ function renderCharts() {
     forecastPlaceholder.hidden = true;
     const forecast = model.forecastSeries.map((day) => ({ 
       value: day.generation, 
-      kind: "forecast",
+      actualValue: day.actualValue || 0,
+      kind: day.kind,
       date: day.date,
       confidence: day.confidence
     }));

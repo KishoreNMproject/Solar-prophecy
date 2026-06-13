@@ -49,11 +49,28 @@ export function renderBarChart(canvas, points, options = {}) {
     const x = box.left + index * (box.width / points.length);
     const y = box.bottom - height;
     
-    ctx.fillStyle = COLORS[point.kind] || COLORS.actual;
-    ctx.globalAlpha = point.kind === "estimated" ? 0.4 : point.kind === "forecast" ? 0.6 : 1;
-    if (index === hoverIndex) ctx.globalAlpha = 1;
-    
-    ctx.fillRect(x, y, Math.min(barWidth, box.width / points.length), height);
+    if (point.kind === "today") {
+      const actualHeight = Math.max(2, ((point.actualValue || 0) / max) * box.height);
+      const actualY = box.bottom - actualHeight;
+      const forecastHeight = height - actualHeight;
+      const forecastY = y;
+      
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = COLORS.actual;
+      ctx.fillRect(x, actualY, Math.min(barWidth, box.width / points.length), actualHeight);
+      
+      if (forecastHeight > 0) {
+        ctx.fillStyle = COLORS.forecast;
+        ctx.globalAlpha = 0.6;
+        ctx.fillRect(x, forecastY, Math.min(barWidth, box.width / points.length), forecastHeight);
+      }
+    } else {
+      ctx.fillStyle = COLORS[point.kind] || COLORS.actual;
+      ctx.globalAlpha = point.kind === "estimated" ? 0.4 : point.kind === "forecast" ? 0.6 : 1;
+      if (index === hoverIndex) ctx.globalAlpha = 1;
+      
+      ctx.fillRect(x, y, Math.min(barWidth, box.width / points.length), height);
+    }
   });
 
   // 2. Draw labels
@@ -62,23 +79,61 @@ export function renderBarChart(canvas, points, options = {}) {
       const height = Math.max(2, (point.value / max) * box.height);
       const x = box.left + index * (box.width / points.length);
       const y = box.bottom - height;
+      const cx = x + barWidth / 2;
       
       ctx.globalAlpha = 1;
       ctx.fillStyle = COLORS.ink;
       
-      if (barWidth < 14) {
-        ctx.save();
-        ctx.translate(x + barWidth / 2, y - 4);
-        ctx.rotate(-Math.PI / 2);
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
-        ctx.font = "800 9px Inter, sans-serif";
-        ctx.fillText(point.value.toFixed(1), 0, 0);
-        ctx.restore();
+      if (point.kind === "today") {
+        const actualHeight = Math.max(2, ((point.actualValue || 0) / max) * box.height);
+        const actualY = box.bottom - actualHeight;
+
+        if (barWidth < 14) {
+          ctx.save();
+          ctx.translate(cx, y - 4);
+          ctx.rotate(-Math.PI / 2);
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          ctx.font = "800 9px Inter, sans-serif";
+          ctx.fillText(point.value.toFixed(1), 0, 0);
+          ctx.restore();
+          
+          if (point.actualValue > 0 && actualHeight > 20) {
+            ctx.save();
+            ctx.translate(cx, actualY + 4);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = "right";
+            ctx.textBaseline = "middle";
+            ctx.font = "800 9px Inter, sans-serif";
+            ctx.fillStyle = "rgba(255,255,255,0.9)";
+            ctx.fillText(point.actualValue.toFixed(1), 0, 0);
+            ctx.restore();
+          }
+        } else {
+          ctx.textAlign = "center";
+          ctx.font = "800 9px Inter, sans-serif";
+          ctx.fillText(point.value.toFixed(1), cx, y - 4);
+          
+          if (point.actualValue > 0 && actualHeight > 14) {
+            ctx.fillStyle = "rgba(255,255,255,0.9)";
+            ctx.fillText(point.actualValue.toFixed(1), cx, actualY + 10);
+          }
+        }
       } else {
-        ctx.textAlign = "center";
-        ctx.font = "800 9px Inter, sans-serif";
-        ctx.fillText(point.value.toFixed(1), x + barWidth / 2, y - 4);
+        if (barWidth < 14) {
+          ctx.save();
+          ctx.translate(cx, y - 4);
+          ctx.rotate(-Math.PI / 2);
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          ctx.font = "800 9px Inter, sans-serif";
+          ctx.fillText(point.value.toFixed(1), 0, 0);
+          ctx.restore();
+        } else {
+          ctx.textAlign = "center";
+          ctx.font = "800 9px Inter, sans-serif";
+          ctx.fillText(point.value.toFixed(1), cx, y - 4);
+        }
       }
     }
   });
@@ -336,7 +391,8 @@ function drawTooltip(ctx, canvas, box, point, interaction) {
   
   const lines = [
     point.date ? `Date: ${point.date}` : null,
-    `Value: ${point.value.toFixed(2)} kWh`,
+    point.kind === "today" ? `Target: ${point.value.toFixed(2)} kWh` : `Value: ${point.value.toFixed(2)} kWh`,
+    point.kind === "today" ? `Actual: ${(point.actualValue || 0).toFixed(2)} kWh` : null,
     point.kind ? `Type: ${point.kind}` : null,
     point.confidence ? `Confidence: ${Math.round(point.confidence * 100)}%` : null
   ].filter(Boolean);

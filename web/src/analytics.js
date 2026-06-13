@@ -257,17 +257,19 @@ function buildForecasts(actualDays, patterns, baseConfidence, now, capacityKW, l
     
     let kind = "forecast";
     let source = "learned historical pattern";
+    let actualValue = 0;
 
-    if (date === toDateKey(now) && liveTodayGeneration > 0) {
-      // Actual data becomes authoritative immediately after save
-      predicted = liveTodayGeneration;
-      kind = "actual";
-      source = "intraday reality";
+    if (date === toDateKey(now)) {
+      kind = "today";
+      source = "composite live prediction";
+      actualValue = liveTodayGeneration;
+      predicted = Math.max(predicted, liveTodayGeneration);
     }
 
     sevenDay.push({
       date,
       generation: round(predicted),
+      actualValue: actualValue ? round(actualValue) : 0,
       kind,
       confidence: Math.max(0.05, round(baseConfidence * (1 - i * 0.035), 3)),
       source
