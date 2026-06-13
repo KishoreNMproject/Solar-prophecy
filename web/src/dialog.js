@@ -8,7 +8,7 @@ export function showDialog({ title, message, actions }) {
       <p style="margin: 0 0 20px 0; font-size: 0.95rem; color: var(--ink); line-height: 1.5;">${message}</p>
       <div class="modal-actions">
         ${actions.map((action, i) => `
-          <button class="${action.primary ? (action.danger ? "primary danger" : "primary") : "secondary"}" id="dialogAction${i}" ${action.danger ? 'style="background: var(--danger);"' : ''}>
+          <button class="${action.danger ? 'danger' : (action.primary ? 'primary' : 'secondary')}" id="dialogAction${i}">
             ${action.label}
           </button>
         `).join("")}

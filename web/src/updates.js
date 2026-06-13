@@ -1,5 +1,14 @@
-export const CURRENT_VERSION = "1.5.9";
-export const BUILD_DATE = "June 11, 2026";
+export let CURRENT_VERSION = "1.5.13"; // Fallback for web
+try {
+  if (window.SolarAndroid && window.SolarAndroid.getAppVersion) {
+    const androidVer = window.SolarAndroid.getAppVersion();
+    if (androidVer) CURRENT_VERSION = androidVer;
+  }
+} catch (e) {
+  console.error("Failed to read Android version", e);
+}
+
+export const BUILD_DATE = "June 13, 2026";
 
 export const RELEASE_NOTES = [
   "Multi-screen application architecture",
@@ -221,7 +230,9 @@ function updateModalToDownloading(modal) {
 function updateModalToReady(modal, release) {
   const actionsContainer = modal.querySelector(".modal-actions");
   actionsContainer.innerHTML = `
-    <p style="font-size: 0.9rem; color: var(--green); margin-bottom: 12px; font-weight: 600;">Update ready to install</p>
+    <div style="background: var(--brand); color: #fff; padding: 12px; border-radius: 12px; margin-bottom: 16px; text-align: center; font-weight: 800; font-size: 0.95rem; box-shadow: 0 4px 12px var(--brand-glow);">
+      ✅ Update ready to install
+    </div>
     <button class="primary" id="otaInstallBtn">Install Now</button>
     <button class="secondary" id="otaLaterBtn">Later</button>
   `;

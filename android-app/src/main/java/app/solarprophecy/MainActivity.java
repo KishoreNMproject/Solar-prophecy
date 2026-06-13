@@ -231,6 +231,16 @@ public class MainActivity extends Activity {
 
     public class SolarAndroidBridge {
         @JavascriptInterface
+        public String getAppVersion() {
+            try {
+                return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to get app version", e);
+                return "";
+            }
+        }
+
+        @JavascriptInterface
         public void setSystemColors(String colorHex, boolean isLightText) {
             runOnUiThread(() -> {
                 try {

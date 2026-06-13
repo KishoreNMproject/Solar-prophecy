@@ -252,6 +252,8 @@ button {
 .primary { background: linear-gradient(135deg, var(--brand), var(--blue-accent)); color: #fff; box-shadow: 0 4px 15px var(--brand-glow); }
 .primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px var(--brand-glow); }
 .secondary { background: var(--glass-tint); color: var(--ink); border: 1px solid var(--line); }
+.danger { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4); border: 1px solid #e74c3c; }
+.danger:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6); }
 .glass-button { background: var(--panel-strong); border: 1px solid var(--line); color: var(--brand); margin-top: 8px; }
 
 /* Metrics & Charts */
