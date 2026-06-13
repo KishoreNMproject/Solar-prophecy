@@ -1,3 +1,4 @@
 {
-  "release_naming_practice": "Name the app release like Solar_Prophecy_V_x.y.z.apk instead of app_release.apk."
+  "release_naming_practice": "Name the app release like Solar_Prophecy_V_x.y.z.apk instead of app_release.apk.",
+  "web_only_updates_rule": "When an update is strictly for the Web UI (web-ui-feature) and does not fix or modify the Android app, there is no need to bump the version number or generate a new APK release. Just commit the changes and push them to git."
 }

@@ -100,6 +100,7 @@ async function init() {
     }
     if (els.navDownloadAndroid) {
       els.navDownloadAndroid.style.display = "block";
+      els.navDownloadAndroid.style.textAlign = "center";
     }
     const dismissedPromo = localStorage.getItem("dismissed_android_download_card");
     if (!dismissedPromo && els.androidPromoCard) {
