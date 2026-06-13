@@ -74,7 +74,8 @@ const els = {
   androidPromoCard: document.getElementById('androidPromoCard'),
   dismissAndroidPromo: document.getElementById('dismissAndroidPromo'),
   homeDownloadAndroidBtn: document.getElementById('homeDownloadAndroidBtn'),
-  navDownloadAndroid: document.getElementById('navDownloadAndroid')
+  navDownloadAndroid: document.getElementById('navDownloadAndroid'),
+  stickyHomeBtn: document.getElementById('stickyHomeBtn')
 };
 
 init();
@@ -166,6 +167,23 @@ function bindEvents() {
     showAboutModal();
     closeMenu();
   });
+
+  if (els.stickyHomeBtn) {
+    window.addEventListener("scroll", () => {
+      if (window.scrollY > 300) {
+        els.stickyHomeBtn.style.display = "inline-flex";
+      } else {
+        els.stickyHomeBtn.style.display = "none";
+      }
+    });
+
+    els.stickyHomeBtn.addEventListener("click", () => {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    });
+  }
 
   // Smart Header Behavior
   let lastScrollY = window.scrollY;
