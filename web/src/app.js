@@ -133,6 +133,12 @@ function bindEvents() {
       document.getElementById(btn.dataset.target).hidden = false;
       closeMenu();
       if (btn.dataset.target === 'screen-graphs') renderCharts();
+      // Update sticky home visibility based on new screen
+      if (els.stickyHomeBtn) {
+        const isHome = !document.getElementById('screen-home').hidden;
+        if (!isHome || window.scrollY > 300) els.stickyHomeBtn.style.display = "inline-flex";
+        else els.stickyHomeBtn.style.display = "none";
+      }
     });
   });
 
@@ -170,7 +176,8 @@ function bindEvents() {
 
   if (els.stickyHomeBtn) {
     window.addEventListener("scroll", () => {
-      if (window.scrollY > 300) {
+      const isHome = !document.getElementById('screen-home').hidden;
+      if (!isHome || window.scrollY > 300) {
         els.stickyHomeBtn.style.display = "inline-flex";
       } else {
         els.stickyHomeBtn.style.display = "none";
@@ -178,10 +185,24 @@ function bindEvents() {
     });
 
     els.stickyHomeBtn.addEventListener("click", () => {
+      // Switch to home screen if not already there
+      const isHome = !document.getElementById('screen-home').hidden;
+      if (!isHome) {
+        els.navBtns.forEach(b => {
+          if (b.dataset.target === 'screen-home') b.classList.add('active');
+          else b.classList.remove('active');
+        });
+        els.screens.forEach(s => s.hidden = true);
+        document.getElementById('screen-home').hidden = false;
+      }
+      
       window.scrollTo({
         top: 0,
         behavior: "smooth"
       });
+      
+      // Hide button immediately since we are now on home screen at top
+      els.stickyHomeBtn.style.display = "none";
     });
   }
 
