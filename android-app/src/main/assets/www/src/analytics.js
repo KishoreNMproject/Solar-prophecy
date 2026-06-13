@@ -145,9 +145,10 @@ export function buildSolarModel(readings, settings = {}, now = new Date()) {
   
   const forecastConfidence = computeConfidence(actualDays, estimatedDays);
   const patterns = learnPatterns(actualDays); // Train on actual DCRs only
+  const intradayProfile = learnIntradayProfile(allReadings, dailyClosingRecords);
   
   const liveTodayGeneration = computeLiveTodayGeneration(allReadings, dailyClosingRecords, now);
-  const forecasts = buildForecasts(actualDays, patterns, forecastConfidence, now, capacityKW, liveTodayGeneration);
+  const forecasts = buildForecasts(actualDays, patterns, intradayProfile, forecastConfidence, now, capacityKW, liveTodayGeneration);
   const aggregates = aggregateSeries(actualDays); // Validated metrics only consume actual DCRs
   
   const dataQuality = buildDataQuality(allReadings, dailyClosingRecords, actualDays, estimatedDays, forecastConfidence);
@@ -228,7 +229,39 @@ function learnPatterns(days) {
   return { averageDaily: avg, variability, weekday, monthly, trend };
 }
 
-function buildForecasts(actualDays, patterns, baseConfidence, now, capacityKW, liveTodayGeneration = 0) {
+function learnIntradayProfile(allReadings, dailyClosingRecords) {
+  const profile = new Map();
+  const counts = new Map();
+
+  for (let i = 1; i < dailyClosingRecords.length; i++) {
+    const previous = dailyClosingRecords[i - 1];
+    const current = dailyClosingRecords[i];
+    const dateKey = current.date;
+    const delta = current.value - previous.value;
+    
+    if (delta <= 0) continue;
+
+    // Find readings for this date
+    const dayReadings = allReadings.filter(r => toDateKey(r.timestamp) === dateKey);
+    
+    for (const r of dayReadings) {
+      const hour = new Date(r.timestamp).getHours();
+      const intradayGen = Math.max(0, r.virtualValue - previous.value);
+      const pct = Math.min(1, intradayGen / delta);
+      
+      profile.set(hour, (profile.get(hour) || 0) + pct);
+      counts.set(hour, (counts.get(hour) || 0) + 1);
+    }
+  }
+
+  const result = new Map();
+  for (const [hour, sum] of profile.entries()) {
+    result.set(hour, sum / counts.get(hour));
+  }
+  return result;
+}
+
+function buildForecasts(actualDays, patterns, intradayProfile, baseConfidence, now, capacityKW, liveTodayGeneration = 0) {
   const dayCount = actualDays.length;
   const lastDate = actualDays.length ? actualDays[actualDays.length - 1].date : toDateKey(now);
   
@@ -263,6 +296,16 @@ function buildForecasts(actualDays, patterns, baseConfidence, now, capacityKW, l
       kind = "today";
       source = "composite live prediction";
       actualValue = liveTodayGeneration;
+      
+      const currentHour = now.getHours();
+      const completionPct = intradayProfile.get(currentHour) || 0;
+      
+      if (completionPct > 0.05 && completionPct < 0.95 && liveTodayGeneration > 0) {
+        const projectedEOD = liveTodayGeneration / completionPct;
+        const weight = completionPct * completionPct;
+        predicted = (predicted * (1 - weight)) + (projectedEOD * weight);
+      }
+      
       predicted = Math.max(predicted, liveTodayGeneration);
     }
 
