@@ -20,6 +20,7 @@
         <li><button data-target="screen-history" class="nav-btn">History</button></li>
         <li><button data-target="screen-daily-history" class="nav-btn">Daily Gen. History</button></li>
         <li><button data-target="screen-settings" class="nav-btn">Settings</button></li>
+        <li><button id="navDownloadAndroid" class="nav-btn" style="display: none;">📱 Android App</button></li>
         <li><button id="navCheckUpdates" class="nav-btn">Check for Updates</button></li>
         <li><button id="navAbout" class="nav-btn">About</button></li>
       </ul>
@@ -43,6 +44,21 @@
 
       <!-- SCREEN: HOME -->
       <div class="screen active" id="screen-home">
+
+        <section id="androidPromoCard" class="model-status-panel" style="display: none; border-color: var(--brand);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <h2 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--brand);">📱 Get the Full Android Experience</h2>
+            <button id="dismissAndroidPromo" style="background: transparent; border: none; color: var(--muted); font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 0; margin-top: -4px;">&times;</button>
+          </div>
+          <ul style="margin: 0 0 16px 0; padding-left: 20px; font-size: 0.9rem; color: var(--ink); line-height: 1.6;">
+            <li>Native OTA Updates</li>
+            <li>Offline Backups</li>
+            <li>Faster Mobile Experience</li>
+            <li>Enhanced Android Integration</li>
+          </ul>
+          <button class="primary" id="homeDownloadAndroidBtn" style="width: 100%;">Download App</button>
+        </section>
+
         <section class="gauge-container">
           <div class="hero-left">
             <div id="celestialWidget" class="celestial-widget" aria-hidden="true"></div>

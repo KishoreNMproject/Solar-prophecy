@@ -1,4 +1,4 @@
-export let CURRENT_VERSION = "1.6.0"; // Fallback for web
+export let CURRENT_VERSION = "1.6.1"; // Fallback for web
 try {
   if (window.SolarAndroid && window.SolarAndroid.getAppVersion) {
     const androidVer = window.SolarAndroid.getAppVersion();
@@ -110,6 +110,23 @@ export async function manualUpdateCheck() {
   }
 }
 
+export async function downloadLatestApk() {
+  try {
+    const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
+    if (!response.ok) throw new Error("Failed to fetch release");
+    const release = await response.json();
+    const apkAsset = release.assets.find(a => a.name.endsWith(".apk"));
+    if (apkAsset) {
+      window.open(apkAsset.browser_download_url, "_blank");
+    } else {
+      window.open(release.html_url, "_blank");
+    }
+  } catch (err) {
+    console.error(err);
+    window.open(`https://github.com/${GITHUB_REPO}/releases/latest`, "_blank");
+  }
+}
+
 export function showAboutModal() {
   const contentHtml = `
     <div style="padding-right: 8px;">
@@ -121,9 +138,16 @@ export function showAboutModal() {
         ${RELEASE_NOTES.map(note => `<li>${note}</li>`).join("")}
       </ul>
     </div>
+    ${!window.SolarAndroid ? `
+    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line);">
+      <h3 style="font-size: 0.85rem; color: var(--brand); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Android App</h3>
+      <p style="font-size: 0.85rem; margin-bottom: 12px; color: var(--muted);" id="aboutAndroidVersion">Current Stable Release: Fetching...</p>
+      <button class="primary" id="aboutDownloadApkBtn" style="width: 100%;">Download Android App</button>
+    </div>
+    ` : ""}
   `;
 
-  renderGlassModal({
+  const overlay = renderGlassModal({
     icon: "☀️",
     title: "Solar Prophecy",
     subtitle: "About",
@@ -133,6 +157,18 @@ export function showAboutModal() {
       { label: "Close", primary: true, onClick: (modal) => modal.remove() }
     ]
   });
+
+  if (!window.SolarAndroid) {
+    const btn = overlay.querySelector("#aboutDownloadApkBtn");
+    if (btn) btn.addEventListener("click", downloadLatestApk);
+    
+    fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`)
+      .then(res => res.json())
+      .then(release => {
+        const verEl = overlay.querySelector("#aboutAndroidVersion");
+        if (verEl) verEl.textContent = `Current Stable Release: ${release.tag_name}`;
+      }).catch(console.error);
+  }
 }
 
 function compareVersions(v1, v2) {

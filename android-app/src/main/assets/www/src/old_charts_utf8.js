@@ -1,140 +1,53 @@
-function getThemeColors() {
-  const styles = getComputedStyle(document.documentElement);
-  return {
-    actual: styles.getPropertyValue("--chart-actual").trim() || "#2ecc71",
-    estimated: styles.getPropertyValue("--chart-estimated").trim() || "#f39c12",
-    forecast: styles.getPropertyValue("--chart-forecast").trim() || "#3498db",
-    grid: styles.getPropertyValue("--chart-grid").trim() || "rgba(255, 255, 255, 0.05)",
-    text: styles.getPropertyValue("--chart-text").trim() || "#8ca5a0",
-    trend: "#9b59b6",
-    tooltipBg: styles.getPropertyValue("--chart-tooltip-bg").trim() || "rgba(20, 26, 25, 0.95)",
-    tooltipBorder: styles.getPropertyValue("--chart-tooltip-border").trim() || "rgba(255, 255, 255, 0.1)",
-    ink: styles.getPropertyValue("--ink").trim() || "#fff"
-  };
-}
+﻿const COLORS = {
+  actual: "#2ecc71",
+  estimated: "#f39c12",
+  forecast: "#3498db",
+  grid: "rgba(255, 255, 255, 0.05)",
+  text: "#8ca5a0",
+  trend: "#9b59b6",
+  tooltipBg: "rgba(20, 26, 25, 0.95)",
+  tooltipBorder: "rgba(255, 255, 255, 0.1)"
+};
 
 // Store chart data for interaction
 const chartRegistry = new Map();
-
-// Listen for theme changes to re-render all charts
-window.addEventListener("themeChanged", () => {
-  chartRegistry.forEach((entry, canvas) => {
-    if (entry.type === "bar") renderBarChart(canvas, entry.points, entry.options);
-    else renderLineChart(canvas, entry.points, entry.options);
-  });
-});
 
 export function renderBarChart(canvas, points, options = {}) {
   chartRegistry.set(canvas, { type: "bar", points, options });
   const ctx = setup(canvas);
   const box = chartBox(canvas);
-  const COLORS = getThemeColors();
   
   const interaction = chartRegistry.get(canvas).interaction;
   const hoverIndex = interaction ? interaction.index : -1;
 
   drawAxes(ctx, box, points, options);
   
-  if (!points || points.length < 2) {
+  if (points.length < 2) {
     return drawEmpty(ctx, canvas, "Learning from observations...");
   }
 
   const rawMax = Math.max(...points.map((point) => point.value), 0);
-  const max = rawMax > 0 ? rawMax * 1.15 : 1;
+  const max = rawMax > 0 ? rawMax : 1;
   const barWidth = Math.max(1, (box.width / points.length) - 2);
   
-  // 1. Draw bars
   points.forEach((point, index) => {
     const height = Math.max(2, (point.value / max) * box.height);
     const x = box.left + index * (box.width / points.length);
     const y = box.bottom - height;
     
-    if (point.kind === "today") {
-      const actualHeight = Math.max(2, ((point.actualValue || 0) / max) * box.height);
-      const actualY = box.bottom - actualHeight;
-      const forecastHeight = height - actualHeight;
-      const forecastY = y;
-      
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = COLORS.actual;
-      ctx.fillRect(x, actualY, Math.min(barWidth, box.width / points.length), actualHeight);
-      
-      if (forecastHeight > 0) {
-        ctx.fillStyle = COLORS.forecast;
-        ctx.globalAlpha = 0.6;
-        ctx.fillRect(x, forecastY, Math.min(barWidth, box.width / points.length), forecastHeight);
-      }
-    } else {
-      ctx.fillStyle = COLORS[point.kind] || COLORS.actual;
-      ctx.globalAlpha = point.kind === "estimated" ? 0.4 : point.kind === "forecast" ? 0.6 : 1;
-      if (index === hoverIndex) ctx.globalAlpha = 1;
-      
-      ctx.fillRect(x, y, Math.min(barWidth, box.width / points.length), height);
-    }
-  });
+    ctx.fillStyle = COLORS[point.kind] || COLORS.actual;
+    ctx.globalAlpha = point.kind === "estimated" ? 0.4 : point.kind === "forecast" ? 0.6 : 1;
+    if (index === hoverIndex) ctx.globalAlpha = 1;
+    
+    ctx.fillRect(x, y, Math.min(barWidth, box.width / points.length), height);
 
-  // 2. Draw labels
-  points.forEach((point, index) => {
-    if (point.value > 0) {
-      const height = Math.max(2, (point.value / max) * box.height);
-      const x = box.left + index * (box.width / points.length);
-      const y = box.bottom - height;
-      const cx = x + barWidth / 2;
-      
+    // Value labels for compact mode if space permits or if hovered
+    if ((points.length < 15 || index === hoverIndex) && point.value > 0) {
       ctx.globalAlpha = 1;
-      ctx.fillStyle = COLORS.ink;
-      
-      if (point.kind === "today") {
-        const actualHeight = Math.max(2, ((point.actualValue || 0) / max) * box.height);
-        const actualY = box.bottom - actualHeight;
-
-        if (barWidth < 14) {
-          ctx.save();
-          ctx.translate(cx, y - 4);
-          ctx.rotate(-Math.PI / 2);
-          ctx.textAlign = "left";
-          ctx.textBaseline = "middle";
-          ctx.font = "800 9px Inter, sans-serif";
-          ctx.fillText(point.value.toFixed(1), 0, 0);
-          ctx.restore();
-          
-          if (point.actualValue > 0 && actualHeight > 20) {
-            ctx.save();
-            ctx.translate(cx, actualY + 4);
-            ctx.rotate(-Math.PI / 2);
-            ctx.textAlign = "right";
-            ctx.textBaseline = "middle";
-            ctx.font = "800 9px Inter, sans-serif";
-            ctx.fillStyle = "rgba(255,255,255,0.9)";
-            ctx.fillText(point.actualValue.toFixed(1), 0, 0);
-            ctx.restore();
-          }
-        } else {
-          ctx.textAlign = "center";
-          ctx.font = "800 9px Inter, sans-serif";
-          ctx.fillText(point.value.toFixed(1), cx, y - 4);
-          
-          if (point.actualValue > 0 && actualHeight > 14) {
-            ctx.fillStyle = "rgba(255,255,255,0.9)";
-            ctx.fillText(point.actualValue.toFixed(1), cx, actualY + 10);
-          }
-        }
-      } else {
-        if (barWidth < 14) {
-          ctx.save();
-          ctx.translate(cx, y - 4);
-          ctx.rotate(-Math.PI / 2);
-          ctx.textAlign = "left";
-          ctx.textBaseline = "middle";
-          ctx.font = "800 9px Inter, sans-serif";
-          ctx.fillText(point.value.toFixed(1), 0, 0);
-          ctx.restore();
-        } else {
-          ctx.textAlign = "center";
-          ctx.font = "800 9px Inter, sans-serif";
-          ctx.fillText(point.value.toFixed(1), cx, y - 4);
-        }
-      }
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.font = "800 9px Inter, sans-serif";
+      ctx.fillText(point.value.toFixed(1), x + barWidth / 2, y - 4);
     }
   });
   
@@ -153,14 +66,13 @@ export function renderLineChart(canvas, points, options = {}) {
   chartRegistry.set(canvas, { type: "line", points, options });
   const ctx = setup(canvas);
   const box = chartBox(canvas);
-  const COLORS = getThemeColors();
   
   const interaction = chartRegistry.get(canvas).interaction;
   const hoverIndex = interaction ? interaction.index : -1;
 
   drawAxes(ctx, box, points, options);
   
-  if (!points || points.length < 2) {
+  if (points.length < 2) {
     return drawEmpty(ctx, canvas, "More data needed for trends");
   }
 
@@ -204,7 +116,7 @@ export function renderLineChart(canvas, points, options = {}) {
       ctx.arc(pos.x, pos.y, isHovered ? 6 : 4, 0, Math.PI * 2);
       ctx.fill();
       if (isHovered) {
-        ctx.strokeStyle = COLORS.ink;
+        ctx.strokeStyle = "#fff";
         ctx.lineWidth = 2;
         ctx.stroke();
       }
@@ -294,14 +206,13 @@ function chartBox(canvas) {
 }
 
 function drawAxes(ctx, box, points, options) {
-  const COLORS = getThemeColors();
   const rawMax = points && points.length > 0 ? Math.max(...points.map((p) => p.value), 0) : 10;
   const max = rawMax > 0 ? rawMax : 10;
   
   ctx.strokeStyle = COLORS.grid;
   ctx.lineWidth = 1;
   ctx.textAlign = "right";
-  ctx.fillStyle = COLORS.ink;
+  ctx.fillStyle = "#fff"; // High contrast for labels
   ctx.font = "700 9px Inter, sans-serif";
 
   // Y-axis grid and labels
@@ -348,8 +259,7 @@ function drawAxes(ctx, box, points, options) {
 }
 
 function drawEmpty(ctx, canvas, text) {
-  const COLORS = getThemeColors();
-  ctx.fillStyle = COLORS.ink;
+  ctx.fillStyle = "#fff";
   ctx.textAlign = "center";
   ctx.font = "600 12px Inter, sans-serif";
   const lines = text.split("\n");
@@ -361,7 +271,6 @@ function drawEmpty(ctx, canvas, text) {
 }
 
 function drawTitle(ctx, text, box) {
-  const COLORS = getThemeColors();
   ctx.fillStyle = COLORS.text;
   ctx.textAlign = "left";
   ctx.font = "600 10px Inter, sans-serif";
@@ -369,7 +278,6 @@ function drawTitle(ctx, text, box) {
 }
 
 function drawLegend(ctx, canvas, kinds) {
-  const COLORS = getThemeColors();
   const width = canvas.getBoundingClientRect().width || 320;
   let x = width - 160;
   const y = 14;
@@ -384,15 +292,13 @@ function drawLegend(ctx, canvas, kinds) {
 }
 
 function drawTooltip(ctx, canvas, box, point, interaction) {
-  const COLORS = getThemeColors();
   const { x, y } = interaction;
   const padding = 8;
   const lineHeight = 14;
   
   const lines = [
     point.date ? `Date: ${point.date}` : null,
-    point.kind === "today" ? `Target: ${point.value.toFixed(2)} kWh` : `Value: ${point.value.toFixed(2)} kWh`,
-    point.kind === "today" ? `Actual: ${(point.actualValue || 0).toFixed(2)} kWh` : null,
+    `Value: ${point.value.toFixed(2)} kWh`,
     point.kind ? `Type: ${point.kind}` : null,
     point.confidence ? `Confidence: ${Math.round(point.confidence * 100)}%` : null
   ].filter(Boolean);
@@ -407,8 +313,8 @@ function drawTooltip(ctx, canvas, box, point, interaction) {
   if (tx + maxWidth > canvas.clientWidth) tx = x - maxWidth - 10;
   if (ty < 0) ty = y + 10;
   
-  ctx.fillStyle = COLORS.chartTooltipBg;
-  ctx.strokeStyle = COLORS.chartTooltipBorder;
+  ctx.fillStyle = COLORS.tooltipBg;
+  ctx.strokeStyle = COLORS.tooltipBorder;
   ctx.lineWidth = 1;
   
   // Draw tooltip box
@@ -418,9 +324,10 @@ function drawTooltip(ctx, canvas, box, point, interaction) {
   ctx.stroke();
   
   // Draw text
-  ctx.fillStyle = COLORS.ink;
+  ctx.fillStyle = "#fff";
   ctx.textAlign = "left";
   lines.forEach((line, i) => {
     ctx.fillText(line, tx + padding, ty + padding + 10 + i * lineHeight);
   });
 }
+

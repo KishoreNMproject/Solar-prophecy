@@ -10,8 +10,8 @@ android {
         applicationId "app.solarprophecy"
         minSdk 28
         targetSdk 35
-        versionCode 164
-        versionName "1.6.0"
+        versionCode 165
+        versionName "1.6.1"
     }
 
     signingConfigs {

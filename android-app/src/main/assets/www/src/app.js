@@ -1,6 +1,6 @@
 import { buildSolarModel } from "./analytics.js";
 import { renderBarChart, renderLineChart } from "./charts.js";
-import { checkForUpdates, manualUpdateCheck, showAboutModal, CURRENT_VERSION } from "./updates.js";
+import { checkForUpdates, manualUpdateCheck, showAboutModal, CURRENT_VERSION, downloadLatestApk } from "./updates.js";
 import { initTheme, applyTheme, getActiveThemeName } from "./theme.js";
 import { showAlert, showDangerConfirm } from "./dialog.js";
 import {
@@ -70,7 +70,11 @@ const els = {
   topbar: document.querySelector('.topbar'),
   rateDisplay: document.getElementById('rateDisplay'),
   electricityRate: document.getElementById('electricityRate'),
-  dailyHistoryTable: document.getElementById('dailyHistoryTable')
+  dailyHistoryTable: document.getElementById('dailyHistoryTable'),
+  androidPromoCard: document.getElementById('androidPromoCard'),
+  dismissAndroidPromo: document.getElementById('dismissAndroidPromo'),
+  homeDownloadAndroidBtn: document.getElementById('homeDownloadAndroidBtn'),
+  navDownloadAndroid: document.getElementById('navDownloadAndroid')
 };
 
 init();
@@ -93,6 +97,13 @@ async function init() {
   } else {
     if (els.navCheckUpdates && els.navCheckUpdates.parentElement) {
       els.navCheckUpdates.parentElement.style.display = "none";
+    }
+    if (els.navDownloadAndroid) {
+      els.navDownloadAndroid.style.display = "block";
+    }
+    const dismissedPromo = localStorage.getItem("dismissed_android_download_card");
+    if (!dismissedPromo && els.androidPromoCard) {
+      els.androidPromoCard.style.display = "block";
     }
   }
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./service-worker.js").catch(() => {});
@@ -132,6 +143,22 @@ function bindEvents() {
       els.navCheckUpdates.disabled = false;
       closeMenu();
     });
+  } else {
+    if (els.navDownloadAndroid) {
+      els.navDownloadAndroid.addEventListener("click", () => {
+        downloadLatestApk();
+        closeMenu();
+      });
+    }
+    if (els.homeDownloadAndroidBtn) {
+      els.homeDownloadAndroidBtn.addEventListener("click", downloadLatestApk);
+    }
+    if (els.dismissAndroidPromo) {
+      els.dismissAndroidPromo.addEventListener("click", () => {
+        if (els.androidPromoCard) els.androidPromoCard.style.display = "none";
+        localStorage.setItem("dismissed_android_download_card", "true");
+      });
+    }
   }
 
   els.navAbout.addEventListener("click", () => {
@@ -555,6 +582,7 @@ function renderCharts() {
   // Daily Chart
   const daily = model.dailySeries.slice(-45).map((day) => ({ 
     value: day.generation, 
+    actualValue: day.actualValue || 0,
     kind: day.kind, 
     date: day.date,
     confidence: day.confidence
@@ -590,7 +618,8 @@ function renderCharts() {
     forecastPlaceholder.hidden = true;
     const forecast = model.forecastSeries.map((day) => ({ 
       value: day.generation, 
-      kind: "forecast",
+      actualValue: day.actualValue || 0,
+      kind: day.kind,
       date: day.date,
       confidence: day.confidence
     }));

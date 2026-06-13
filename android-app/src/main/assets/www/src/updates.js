@@ -1,5 +1,14 @@
-export const CURRENT_VERSION = "1.5.9";
-export const BUILD_DATE = "June 11, 2026";
+export let CURRENT_VERSION = "1.6.1"; // Fallback for web
+try {
+  if (window.SolarAndroid && window.SolarAndroid.getAppVersion) {
+    const androidVer = window.SolarAndroid.getAppVersion();
+    if (androidVer) CURRENT_VERSION = androidVer;
+  }
+} catch (e) {
+  console.error("Failed to read Android version", e);
+}
+
+export const BUILD_DATE = "June 13, 2026";
 
 export const RELEASE_NOTES = [
   "Multi-screen application architecture",
@@ -101,6 +110,23 @@ export async function manualUpdateCheck() {
   }
 }
 
+export async function downloadLatestApk() {
+  try {
+    const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
+    if (!response.ok) throw new Error("Failed to fetch release");
+    const release = await response.json();
+    const apkAsset = release.assets.find(a => a.name.endsWith(".apk"));
+    if (apkAsset) {
+      window.open(apkAsset.browser_download_url, "_blank");
+    } else {
+      window.open(release.html_url, "_blank");
+    }
+  } catch (err) {
+    console.error(err);
+    window.open(`https://github.com/${GITHUB_REPO}/releases/latest`, "_blank");
+  }
+}
+
 export function showAboutModal() {
   const contentHtml = `
     <div style="padding-right: 8px;">
@@ -112,9 +138,16 @@ export function showAboutModal() {
         ${RELEASE_NOTES.map(note => `<li>${note}</li>`).join("")}
       </ul>
     </div>
+    ${!window.SolarAndroid ? `
+    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line);">
+      <h3 style="font-size: 0.85rem; color: var(--brand); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Android App</h3>
+      <p style="font-size: 0.85rem; margin-bottom: 12px; color: var(--muted);" id="aboutAndroidVersion">Current Stable Release: Fetching...</p>
+      <button class="primary" id="aboutDownloadApkBtn" style="width: 100%;">Download Android App</button>
+    </div>
+    ` : ""}
   `;
 
-  renderGlassModal({
+  const overlay = renderGlassModal({
     icon: "☀️",
     title: "Solar Prophecy",
     subtitle: "About",
@@ -124,6 +157,18 @@ export function showAboutModal() {
       { label: "Close", primary: true, onClick: (modal) => modal.remove() }
     ]
   });
+
+  if (!window.SolarAndroid) {
+    const btn = overlay.querySelector("#aboutDownloadApkBtn");
+    if (btn) btn.addEventListener("click", downloadLatestApk);
+    
+    fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`)
+      .then(res => res.json())
+      .then(release => {
+        const verEl = overlay.querySelector("#aboutAndroidVersion");
+        if (verEl) verEl.textContent = `Current Stable Release: ${release.tag_name}`;
+      }).catch(console.error);
+  }
 }
 
 function compareVersions(v1, v2) {
@@ -221,7 +266,9 @@ function updateModalToDownloading(modal) {
 function updateModalToReady(modal, release) {
   const actionsContainer = modal.querySelector(".modal-actions");
   actionsContainer.innerHTML = `
-    <p style="font-size: 0.9rem; color: var(--green); margin-bottom: 12px; font-weight: 600;">Update ready to install</p>
+    <div style="background: var(--brand); color: #fff; padding: 12px; border-radius: 12px; margin-bottom: 16px; text-align: center; font-weight: 800; font-size: 0.95rem; box-shadow: 0 4px 12px var(--brand-glow);">
+      ✅ Update ready to install
+    </div>
     <button class="primary" id="otaInstallBtn">Install Now</button>
     <button class="secondary" id="otaLaterBtn">Later</button>
   `;

@@ -255,21 +255,29 @@ function buildForecasts(actualDays, patterns, baseConfidence, now, capacityKW, l
     const d = fromDateKey(date);
     let predicted = predictDay(patterns, d, actualDays.length + i, capacityKW);
     
-    if (date === toDateKey(now) && predicted < liveTodayGeneration) {
-      console.warn(`Forecast continuity adjusted: baseline (${round(predicted)}) < actual (${round(liveTodayGeneration)}). Rebuilding forecast from reality.`);
-      predicted = liveTodayGeneration;
+    let kind = "forecast";
+    let source = "learned historical pattern";
+    let actualValue = 0;
+
+    if (date === toDateKey(now)) {
+      kind = "today";
+      source = "composite live prediction";
+      actualValue = liveTodayGeneration;
+      predicted = Math.max(predicted, liveTodayGeneration);
     }
 
     sevenDay.push({
       date,
       generation: round(predicted),
-      kind: "forecast",
+      actualValue: actualValue ? round(actualValue) : 0,
+      kind,
       confidence: Math.max(0.05, round(baseConfidence * (1 - i * 0.035), 3)),
-      source: "learned historical pattern"
+      source
     });
   }
 
-  const tomorrow = sevenDay[0] || null;
+  const tomorrowDate = addDays(toDateKey(now), 1);
+  const tomorrow = sevenDay.find(f => f.date === tomorrowDate) || null;
   const monthly = forecastPeriod(actualDays, patterns, baseConfidence, 30, capacityKW);
   const biMonthly = forecastPeriod(actualDays, patterns, baseConfidence, 60, capacityKW);
   const annual = forecastPeriod(actualDays, patterns, baseConfidence, 365, capacityKW);
