@@ -40,9 +40,10 @@ export function renderBarChart(canvas, points, options = {}) {
   }
 
   const rawMax = Math.max(...points.map((point) => point.value), 0);
-  const max = rawMax > 0 ? rawMax : 1;
+  const max = rawMax > 0 ? rawMax * 1.15 : 1;
   const barWidth = Math.max(1, (box.width / points.length) - 2);
   
+  // 1. Draw bars
   points.forEach((point, index) => {
     const height = Math.max(2, (point.value / max) * box.height);
     const x = box.left + index * (box.width / points.length);
@@ -53,14 +54,32 @@ export function renderBarChart(canvas, points, options = {}) {
     if (index === hoverIndex) ctx.globalAlpha = 1;
     
     ctx.fillRect(x, y, Math.min(barWidth, box.width / points.length), height);
+  });
 
-    // Value labels for compact mode if space permits or if hovered
-    if ((points.length < 15 || index === hoverIndex) && point.value > 0) {
+  // 2. Draw labels
+  points.forEach((point, index) => {
+    if (point.value > 0) {
+      const height = Math.max(2, (point.value / max) * box.height);
+      const x = box.left + index * (box.width / points.length);
+      const y = box.bottom - height;
+      
       ctx.globalAlpha = 1;
       ctx.fillStyle = COLORS.ink;
-      ctx.textAlign = "center";
-      ctx.font = "800 9px Inter, sans-serif";
-      ctx.fillText(point.value.toFixed(1), x + barWidth / 2, y - 4);
+      
+      if (barWidth < 14) {
+        ctx.save();
+        ctx.translate(x + barWidth / 2, y - 4);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.font = "800 9px Inter, sans-serif";
+        ctx.fillText(point.value.toFixed(1), 0, 0);
+        ctx.restore();
+      } else {
+        ctx.textAlign = "center";
+        ctx.font = "800 9px Inter, sans-serif";
+        ctx.fillText(point.value.toFixed(1), x + barWidth / 2, y - 4);
+      }
     }
   });
   
