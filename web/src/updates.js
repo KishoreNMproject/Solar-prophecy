@@ -1,4 +1,4 @@
-export let CURRENT_VERSION = "1.8.0"; // Fallback for web
+export let CURRENT_VERSION = "1.8.1"; // Fallback for web
 try {
   if (window.SolarAndroid && window.SolarAndroid.getAppVersion) {
     const androidVer = window.SolarAndroid.getAppVersion();
@@ -301,16 +301,11 @@ function updateModalToDownloading(modal) {
 function updateModalToReady(modal, release) {
   const actionsContainer = modal.querySelector(".modal-actions");
   actionsContainer.innerHTML = `
-    <div style="background: var(--brand); color: #fff; padding: 12px; border-radius: 12px; margin-bottom: 16px; text-align: center; font-weight: 800; font-size: 0.95rem; box-shadow: 0 4px 12px var(--brand-glow);">
-      ✅ Update downloaded successfully.
+    <div style="background: var(--brand); color: #fff; padding: 12px; border-radius: 8px; margin-bottom: 16px; text-align: center; font-weight: 700; font-size: 0.95rem;">
+      ✅ Update ready to install
     </div>
-    <p style="font-size: 0.9rem; color: var(--ink); margin-bottom: 16px; text-align: center; font-weight: 600;">
-      Android is ready to install the update.
-    </p>
-    <button class="primary" id="otaLaterBtn" style="margin-bottom: 12px;">OK</button>
-    <div style="text-align: center;">
-      <button class="glass-button" id="otaInstallBtn" style="font-size: 0.75rem; padding: 4px 8px;">Open Downloads folder</button>
-    </div>
+    <button class="primary" id="otaInstallBtn" style="margin-bottom: 12px; width: 100%;">Install Now</button>
+    <button class="secondary" id="otaLaterBtn" style="width: 100%; border: 1px solid var(--line);">Later</button>
   `;
 
   modal.querySelector("#otaInstallBtn").addEventListener("click", () => {

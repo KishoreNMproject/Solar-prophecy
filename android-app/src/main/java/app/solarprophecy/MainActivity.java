@@ -22,6 +22,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import androidx.core.content.FileProvider;
 
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.ServiceWorkerClientCompat;
@@ -54,6 +55,24 @@ public class MainActivity extends Activity {
     @SuppressLint("SetJavaScriptEnabled")
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Clean up any previously downloaded OTA updates
+        try {
+            java.io.File downloadDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+            if (downloadDir != null && downloadDir.exists() && downloadDir.isDirectory()) {
+                java.io.File[] files = downloadDir.listFiles();
+                if (files != null) {
+                    for (java.io.File file : files) {
+                        if (file.isFile() && file.getName().endsWith(".apk")) {
+                            boolean deleted = file.delete();
+                            Log.i(TAG, "Startup Cleanup: Deleted old APK " + file.getName() + " -> " + deleted);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to clean up old OTA files on startup", e);
+        }
 
         assetLoader = new WebViewAssetLoader.Builder()
                 .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
@@ -289,10 +308,9 @@ public class MainActivity extends Activity {
             
             // Temporary Mitigation: Clean up previous Solar Prophecy APKs
             try {
-                java.io.File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                java.io.File solarDir = new java.io.File(downloadDir, "SolarProphecy");
-                if (solarDir.exists() && solarDir.isDirectory()) {
-                    java.io.File[] files = solarDir.listFiles();
+                java.io.File downloadDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                if (downloadDir != null && downloadDir.exists() && downloadDir.isDirectory()) {
+                    java.io.File[] files = downloadDir.listFiles();
                     if (files != null) {
                         for (java.io.File file : files) {
                             if (file.isFile() && file.getName().endsWith(".apk")) {
@@ -311,7 +329,7 @@ public class MainActivity extends Activity {
             request.setDescription("Downloading version " + versionName);
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
             request.setMimeType("application/vnd.android.package-archive");
-            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "SolarProphecy/SolarProphecy-" + versionName + ".apk");
+            request.setDestinationInExternalFilesDir(MainActivity.this, Environment.DIRECTORY_DOWNLOADS, "update.apk");
             
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 request.setRequiresCharging(false);
@@ -324,18 +342,24 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void installUpdate(String versionName) {
-            Log.i(TAG, "Install button pressed. Opening Downloads folder for user to install version: " + versionName);
-            openDownloadsFolder();
-        }
-
-        @JavascriptInterface
-        public void openDownloadsFolder() {
+            Log.i(TAG, "Install button pressed. Launching installer for version: " + versionName);
             try {
-                Intent intent = new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
+                java.io.File downloadDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                java.io.File updateFile = new java.io.File(downloadDir, "update.apk");
+                
+                if (updateFile.exists()) {
+                    Uri apkUri = FileProvider.getUriForFile(MainActivity.this, getApplicationContext().getPackageName() + ".fileprovider", updateFile);
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(intent);
+                } else {
+                    Log.e(TAG, "Update file not found: " + updateFile.getAbsolutePath());
+                    Toast.makeText(MainActivity.this, "Update file not found", Toast.LENGTH_SHORT).show();
+                }
             } catch (Exception e) {
-                Log.e(TAG, "Failed to open downloads folder: " + e.getMessage());
+                Log.e(TAG, "Failed to start install intent: " + e.getMessage());
+                Toast.makeText(MainActivity.this, "Failed to start install", Toast.LENGTH_SHORT).show();
             }
         }
     }
