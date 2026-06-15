@@ -260,6 +260,9 @@
                 <p>Theme: <strong id="activeThemeDisplay">--</strong></p>
               </div>
               <div class="summary-group" style="margin-top: 16px; border-top: 1px solid var(--line); padding-top: 16px;">
+                <p>Swipe Navigation: <strong id="swipeGestureDisplay">--</strong></p>
+              </div>
+              <div class="summary-group" style="margin-top: 16px; border-top: 1px solid var(--line); padding-top: 16px;">
                 <p>Current Version: <strong id="currentVersionDisplay">--</strong></p>
               </div>
               <button type="button" class="glass-button" id="editSettingsBtn" style="margin-top: 12px;">Edit Settings</button>
@@ -296,6 +299,17 @@
                     <option value="auto">🌅 Follow Day/Night</option>
                   </select>
                 </label>
+              </div>
+
+              <div class="section-label" style="margin-top: 16px;">Navigation</div>
+              <div class="settings-row full-width">
+                <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%;">
+                  <span style="margin-bottom: 0;">Swipe gesture opens menu</span>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="swipeGestureEnabled">
+                    <span class="slider"></span>
+                  </label>
+                </div>
               </div>
               
               <div style="display: flex; gap: 8px; margin-top: 16px;">

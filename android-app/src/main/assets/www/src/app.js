@@ -58,6 +58,8 @@ const els = {
   editReadingTimestamp: document.querySelector("#editReadingTimestamp"),
   closeEditModal: document.querySelector("#closeEditModal"),
   forecastConfidence: document.querySelector("#forecastConfidence"),
+  swipeGestureEnabled: document.querySelector("#swipeGestureEnabled"),
+  swipeGestureDisplay: document.querySelector("#swipeGestureDisplay"),
   qualityWarning: document.querySelector("#qualityWarning"),
   lowGenerationWarning: document.querySelector("#lowGenerationWarning"),
   modelStatus: document.querySelector("#modelStatus"),
@@ -102,10 +104,19 @@ async function init() {
   els.solarCapacity.value = settings.solarCapacity || "";
   els.solarCapacityUnit.value = settings.solarCapacityUnit || "kW";
   els.themeMode.value = settings.themeMode || "system";
+  els.swipeGestureEnabled.checked = settings.swipeNavEnabled;
+
+  if (settings.swipeNavEnabled === undefined) settings.swipeNavEnabled = true;
+  if (settings.hideSwipeGestureInfo === undefined) settings.hideSwipeGestureInfo = false;
+  els.swipeGestureEnabled.checked = settings.swipeNavEnabled;
+
   bindEvents();
   await refresh();
   if (window.SolarAndroid) {
     checkForUpdates();
+    if (!settings.hideSwipeGestureInfo) {
+      showSwipeGestureInfoModal();
+    }
   } else {
     if (els.navCheckUpdates && els.navCheckUpdates.parentElement) {
       els.navCheckUpdates.parentElement.style.display = "none";
@@ -135,6 +146,44 @@ function bindEvents() {
   els.hamburgerBtn.addEventListener('click', openMenu);
   els.closeNav.addEventListener('click', closeMenu);
   els.navOverlay.addEventListener('click', closeMenu);
+
+  let touchStartX = 0;
+  let touchStartY = 0;
+  
+  document.addEventListener("touchstart", (e) => {
+    if (!settings.swipeNavEnabled) return;
+    
+    // Ignore if modal dialogs are open
+    if (document.querySelector('.modal-overlay:not([style*="display: none"])')) return;
+    
+    // Ignore if target is inside chart or horizontally scrolling containers
+    const target = e.target;
+    if (target.closest('.recharts-wrapper') || target.closest('canvas') || target.closest('svg') || target.closest('.overflow-x') || target.closest('.table-container') || target.closest('#charts-container')) return;
+    
+    // Ignore if form inputs have focus
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+    
+    touchStartX = e.changedTouches[0].clientX;
+    touchStartY = e.changedTouches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener("touchend", (e) => {
+    if (!settings.swipeNavEnabled) return;
+    
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    
+    // Edge activation zone: 0 to 30px from left edge
+    if (touchStartX > 30) return;
+
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = Math.abs(touchEndY - touchStartY);
+
+    // Intentional horizontal swipe towards right
+    if (deltaX > 50 && deltaY < 30) {
+      openMenu();
+    }
+  }, { passive: true });
 
   els.navBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -333,6 +382,7 @@ function bindEvents() {
     settings.solarCapacity = els.solarCapacity.value;
     settings.solarCapacityUnit = els.solarCapacityUnit.value;
     settings.themeMode = els.themeMode.value;
+    settings.swipeNavEnabled = els.swipeGestureEnabled.checked;
     applyTheme(settings.themeMode);
     await saveSettings(db, settings);
     await refresh("Settings saved.");
@@ -818,6 +868,7 @@ function renderSettingsView() {
   els.yearDisplay.textContent = hasYear ? settings.installationDate : "--";
   els.activeThemeDisplay.textContent = getActiveThemeName();
   els.currentVersionDisplay.textContent = `v${CURRENT_VERSION}`;
+  els.swipeGestureDisplay.textContent = settings.swipeNavEnabled ? "Enabled" : "Disabled";
 
   // First-time setup: show edit form by default, hide edit button
   if (!hasCapacity && !hasYear) {
@@ -845,6 +896,62 @@ function setCustomTimestampMode(enabled) {
   els.timestampField.hidden = !enabled;
   els.readingTimestamp.disabled = !enabled;
   els.autoTimestampLabel.hidden = enabled;
+}
+
+function showSwipeGestureInfoModal() {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  
+  overlay.innerHTML = `
+    <div class="glass-modal">
+      <h2 style="margin: 0 0 12px 0; font-size: 1.2rem; font-weight: 800; color: var(--brand);">Navigation Gesture Available</h2>
+      <p style="margin: 0 0 20px 0; font-size: 0.95rem; color: var(--ink); line-height: 1.5;">The swipe gesture is set to open the hamburger menu in the app interface. You can toggle this setting on or off using the switch below.</p>
+      
+      <div style="margin-bottom: 12px; background: rgba(0,0,0,0.03); padding: 12px; border-radius: 8px;">
+        <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between;">
+          <span style="font-weight: 600;">Enable swipe gesture</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="modalSwipeToggle" ${settings.swipeNavEnabled ? 'checked' : ''}>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 20px; padding: 0 12px;">
+        <label style="display: flex; flex-direction: row; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="modalDontShowToggle" style="width: auto;">
+          <span style="font-size: 0.9rem;">Don't show again</span>
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button class="primary" id="modalSwipeSave">Save</button>
+        <button class="secondary" id="modalSwipeLater">Later</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay);
+
+  overlay.querySelector("#modalSwipeSave").addEventListener("click", async () => {
+    const swipeEnabled = overlay.querySelector("#modalSwipeToggle").checked;
+    const dontShow = overlay.querySelector("#modalDontShowToggle").checked;
+    
+    settings.swipeNavEnabled = swipeEnabled;
+    if (dontShow) {
+      settings.hideSwipeGestureInfo = true;
+    }
+    
+    els.swipeGestureEnabled.checked = swipeEnabled;
+    els.swipeGestureDisplay.textContent = swipeEnabled ? "Enabled" : "Disabled";
+    
+    await saveSettings(db, settings);
+    overlay.remove();
+  });
+  
+  overlay.querySelector("#modalSwipeLater").addEventListener("click", () => {
+    overlay.remove();
+  });
 }
 
 function monthlyChartPoints() {
