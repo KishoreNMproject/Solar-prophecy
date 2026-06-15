@@ -10,3 +10,4 @@ local.properties
 .agents/
 .agents/**
 *.md
+audit files/
