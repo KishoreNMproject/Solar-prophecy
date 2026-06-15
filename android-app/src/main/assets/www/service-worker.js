@@ -1,4 +1,4 @@
-const CACHE_NAME = "solar-prophecy-v1";
+const CACHE_NAME = "solar-prophecy-v1.7.3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -7,10 +7,13 @@ const ASSETS = [
   "./src/analytics.js",
   "./src/app.js",
   "./src/charts.js",
-  "./src/db.js"
+  "./src/db.js",
+  "./src/dialog.js",
+  "./src/updates.js"
 ];
 
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
 });
 
@@ -18,7 +21,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
-    )
+    ).then(() => self.clients.claim())
   );
 });
 
