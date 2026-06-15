@@ -651,15 +651,20 @@ function renderReadings() {
     .join("");
 
   els.readingsTable.querySelectorAll("[data-edit]").forEach((button) => {
+    console.log("Diagnostic: Attaching edit click listener to reading ID", button.dataset.edit);
     button.addEventListener("click", () => {
+      console.log("Diagnostic: Edit button clicked for reading ID", button.dataset.edit);
       const reading = model.readings.find((item) => item.id === button.dataset.edit);
+      console.log("Diagnostic: Found reading data", reading);
       els.editReadingId.value = reading.id;
       els.editReadingValue.value = reading.value;
       els.editReadingTimestamp.value = localDateTimeValue(new Date(reading.timestamp));
       els.editUseCustomTimestamp.checked = true;
       els.editTimestampField.hidden = false;
       els.editReadingTimestamp.disabled = false;
+      console.log("Diagnostic: Opening edit modal overlay");
       els.editModalOverlay.style.display = "flex";
+      console.log("Diagnostic: Modal overlay display set to flex");
     });
   });
 

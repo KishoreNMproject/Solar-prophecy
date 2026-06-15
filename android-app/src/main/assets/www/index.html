@@ -318,6 +318,35 @@
 
     </main>
 
+    <!-- EDIT MODAL -->
+    <div id="editModalOverlay" class="modal-overlay" style="display: none; z-index: 1000;">
+      <div class="glass-modal" style="width: 90%; max-width: 400px; padding: 24px;">
+        <h2 style="margin: 0 0 12px 0; font-size: 1.2rem; font-weight: 800; color: var(--brand);">Edit Reading</h2>
+        <form id="editReadingForm" class="reading-form" style="box-shadow: none; border: none; padding: 0; background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none;">
+          <input type="hidden" id="editReadingId">
+          <label>
+            <span>Cumulative inverter reading</span>
+            <input id="editReadingValue" type="number" min="0" step="0.001" inputmode="decimal" required placeholder="kWh">
+          </label>
+          <div class="time-mode">
+            <label class="checkbox-row">
+              <input id="editUseCustomTimestamp" type="checkbox">
+              <span>Custom date and time</span>
+            </label>
+          </div>
+          <label id="editTimestampField" hidden>
+            <span>Reading date and time</span>
+            <input id="editReadingTimestamp" type="datetime-local" required>
+          </label>
+          <p class="form-note" style="margin-top: 8px;">Estimates will be recalculated automatically.</p>
+          <div class="modal-actions" style="margin-top: 20px;">
+            <button class="secondary" type="button" id="closeEditModal">Cancel</button>
+            <button class="primary" type="submit">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script type="module" src="./src/app.js"></script>
   </body>
 </html>

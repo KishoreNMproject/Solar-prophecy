@@ -48,6 +48,15 @@ const els = {
   readingsTable: document.querySelector("#readingsTable"),
   readingCount: document.querySelector("#readingCount"),
   forecastList: document.querySelector("#forecastList"),
+  dailyHistoryTable: document.querySelector("#dailyHistoryTable"),
+  editModalOverlay: document.querySelector("#editModalOverlay"),
+  editReadingForm: document.querySelector("#editReadingForm"),
+  editReadingId: document.querySelector("#editReadingId"),
+  editReadingValue: document.querySelector("#editReadingValue"),
+  editUseCustomTimestamp: document.querySelector("#editUseCustomTimestamp"),
+  editTimestampField: document.querySelector("#editTimestampField"),
+  editReadingTimestamp: document.querySelector("#editReadingTimestamp"),
+  closeEditModal: document.querySelector("#closeEditModal"),
   forecastConfidence: document.querySelector("#forecastConfidence"),
   qualityWarning: document.querySelector("#qualityWarning"),
   lowGenerationWarning: document.querySelector("#lowGenerationWarning"),
@@ -267,12 +276,54 @@ function bindEvents() {
     await refresh(message);
   });
 
+  els.editReadingForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const readingValue = Number(els.editReadingValue.value);
+    const readingId = els.editReadingId.value || undefined;
+    const timestamp = els.editUseCustomTimestamp.checked ? els.editReadingTimestamp.value : new Date().toISOString();
+    
+    let epoch = 0;
+    const sortedReadings = [...readings].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const prevReading = sortedReadings.filter(r => new Date(r.timestamp) < new Date(timestamp)).pop();
+    
+    let message = "Reading updated.";
+    if (prevReading) {
+      epoch = prevReading.epoch || 0;
+      if (readingValue < prevReading.value) {
+        epoch++;
+        message = "Meter reset detected. Historical production preserved.";
+      }
+    }
+
+    await saveReading(db, {
+      id: readingId,
+      value: readingValue,
+      timestamp,
+      epoch
+    });
+    
+    els.editModalOverlay.style.display = "none";
+    await refresh(message);
+  });
+
+  els.closeEditModal.addEventListener("click", () => {
+    els.editModalOverlay.style.display = "none";
+  });
+
   els.cancelEdit.addEventListener("click", resetForm);
 
   els.useCustomTimestamp.addEventListener("change", () => {
     setCustomTimestampMode(els.useCustomTimestamp.checked);
     if (els.useCustomTimestamp.checked && !els.readingTimestamp.value) {
       els.readingTimestamp.value = localDateTimeValue(new Date());
+    }
+  });
+
+  els.editUseCustomTimestamp.addEventListener("change", () => {
+    els.editTimestampField.hidden = !els.editUseCustomTimestamp.checked;
+    els.editReadingTimestamp.disabled = !els.editUseCustomTimestamp.checked;
+    if (els.editUseCustomTimestamp.checked && !els.editReadingTimestamp.value) {
+      els.editReadingTimestamp.value = localDateTimeValue(new Date());
     }
   });
 
@@ -600,14 +651,20 @@ function renderReadings() {
     .join("");
 
   els.readingsTable.querySelectorAll("[data-edit]").forEach((button) => {
+    console.log("Diagnostic: Attaching edit click listener to reading ID", button.dataset.edit);
     button.addEventListener("click", () => {
+      console.log("Diagnostic: Edit button clicked for reading ID", button.dataset.edit);
       const reading = model.readings.find((item) => item.id === button.dataset.edit);
-      els.readingId.value = reading.id;
-      els.readingValue.value = reading.value;
-      els.readingTimestamp.value = localDateTimeValue(new Date(reading.timestamp));
-      setCustomTimestampMode(true);
-      els.cancelEdit.hidden = false;
-      els.entryMessage.textContent = "Editing an actual reading. Estimates will be recalculated automatically.";
+      console.log("Diagnostic: Found reading data", reading);
+      els.editReadingId.value = reading.id;
+      els.editReadingValue.value = reading.value;
+      els.editReadingTimestamp.value = localDateTimeValue(new Date(reading.timestamp));
+      els.editUseCustomTimestamp.checked = true;
+      els.editTimestampField.hidden = false;
+      els.editReadingTimestamp.disabled = false;
+      console.log("Diagnostic: Opening edit modal overlay");
+      els.editModalOverlay.style.display = "flex";
+      console.log("Diagnostic: Modal overlay display set to flex");
     });
   });
 
