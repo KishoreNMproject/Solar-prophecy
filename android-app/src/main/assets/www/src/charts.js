@@ -49,20 +49,33 @@ export function renderBarChart(canvas, points, options = {}) {
     const x = box.left + index * (box.width / points.length);
     const y = box.bottom - height;
     
-    if (point.kind === "today") {
-      const actualHeight = Math.max(2, ((point.actualValue || 0) / max) * box.height);
-      const actualY = box.bottom - actualHeight;
-      const forecastHeight = height - actualHeight;
-      const forecastY = y;
+    if (point.kind === "today" || point.forecastValue !== undefined) {
+      const isToday = point.kind === "today";
+      const actualVal = isToday ? (point.actualValue || 0) : point.value;
+      const forecastVal = isToday ? point.value : point.forecastValue;
       
+      const actualHeight = Math.max(2, (actualVal / max) * box.height);
+      const forecastFullHeight = Math.max(2, (forecastVal / max) * box.height);
+      
+      const actualY = box.bottom - actualHeight;
+      const forecastY = box.bottom - forecastFullHeight;
+      
+      // Draw actual as solid base
       ctx.globalAlpha = 1;
       ctx.fillStyle = COLORS.actual;
       ctx.fillRect(x, actualY, Math.min(barWidth, box.width / points.length), actualHeight);
       
-      if (forecastHeight > 0) {
+      // If forecast is higher, draw the extra bit on top
+      if (forecastVal > actualVal) {
+        const extraHeight = forecastFullHeight - actualHeight;
         ctx.fillStyle = COLORS.forecast;
-        ctx.globalAlpha = 0.6;
-        ctx.fillRect(x, forecastY, Math.min(barWidth, box.width / points.length), forecastHeight);
+        ctx.globalAlpha = 0.7;
+        ctx.fillRect(x, forecastY, Math.min(barWidth, box.width / points.length), extraHeight);
+      } else if (forecastVal < actualVal && forecastVal > 0) {
+        // If forecast was lower, draw a marker line
+        ctx.fillStyle = COLORS.forecast;
+        ctx.globalAlpha = 1;
+        ctx.fillRect(x, forecastY, Math.min(barWidth, box.width / points.length), 3);
       }
     } else {
       ctx.fillStyle = COLORS[point.kind] || COLORS.actual;
@@ -84,8 +97,12 @@ export function renderBarChart(canvas, points, options = {}) {
       ctx.globalAlpha = 1;
       ctx.fillStyle = COLORS.ink;
       
-      if (point.kind === "today") {
-        const actualHeight = Math.max(2, ((point.actualValue || 0) / max) * box.height);
+      if (point.kind === "today" || point.forecastValue !== undefined) {
+        const isToday = point.kind === "today";
+        const actualVal = isToday ? (point.actualValue || 0) : point.value;
+        const forecastVal = isToday ? point.value : point.forecastValue;
+        
+        const actualHeight = Math.max(2, (actualVal / max) * box.height);
         const actualY = box.bottom - actualHeight;
 
         if (barWidth < 14) {
@@ -95,10 +112,10 @@ export function renderBarChart(canvas, points, options = {}) {
           ctx.textAlign = "left";
           ctx.textBaseline = "middle";
           ctx.font = "800 9px Inter, sans-serif";
-          ctx.fillText(point.value.toFixed(1), 0, 0);
+          ctx.fillText(forecastVal.toFixed(1), 0, 0);
           ctx.restore();
           
-          if (point.actualValue > 0 && actualHeight > 20) {
+          if (actualVal > 0 && actualHeight > 20) {
             ctx.save();
             ctx.translate(cx, actualY + 4);
             ctx.rotate(-Math.PI / 2);
@@ -106,17 +123,17 @@ export function renderBarChart(canvas, points, options = {}) {
             ctx.textBaseline = "middle";
             ctx.font = "800 9px Inter, sans-serif";
             ctx.fillStyle = "rgba(255,255,255,0.9)";
-            ctx.fillText(point.actualValue.toFixed(1), 0, 0);
+            ctx.fillText(actualVal.toFixed(1), 0, 0);
             ctx.restore();
           }
         } else {
           ctx.textAlign = "center";
           ctx.font = "800 9px Inter, sans-serif";
-          ctx.fillText(point.value.toFixed(1), cx, y - 4);
+          ctx.fillText(forecastVal.toFixed(1), cx, y - 4);
           
-          if (point.actualValue > 0 && actualHeight > 14) {
+          if (actualVal > 0 && actualHeight > 14) {
             ctx.fillStyle = "rgba(255,255,255,0.9)";
-            ctx.fillText(point.actualValue.toFixed(1), cx, actualY + 10);
+            ctx.fillText(actualVal.toFixed(1), cx, actualY + 10);
           }
         }
       } else {

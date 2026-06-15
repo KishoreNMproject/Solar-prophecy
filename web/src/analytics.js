@@ -128,7 +128,7 @@ export function getDailyClosingRecords(readings, now = new Date()) {
     }));
 }
 
-export function buildSolarModel(readings, settings = {}, now = new Date()) {
+export function buildSolarModel(readings, settings = {}, validations = {}, now = new Date()) {
   const allReadings = applyEpochs(normalizeReadings(readings));
   const dailyClosingRecords = getDailyClosingRecords(readings, now);
   const dailySeries = buildDailySeries(dailyClosingRecords, allReadings);
@@ -138,8 +138,13 @@ export function buildSolarModel(readings, settings = {}, now = new Date()) {
   const capacityUnit = settings.solarCapacityUnit || "kW";
   const capacityKW = capacityUnit === "W" ? capacityValue / 1000 : capacityValue;
 
-  // Historical accounting must consume Daily Closing Records only.
-  const actualDays = dailySeries.filter((day) => day.kind === "actual");
+  const actualDays = dailySeries.filter((day) => day.kind === "actual").map(day => {
+    const val = validations[day.date];
+    if (val && val.forecast !== undefined) {
+      return { ...day, forecastValue: val.forecast };
+    }
+    return day;
+  });
   const estimatedDays = dailySeries.filter((day) => day.kind === "estimated");
   const modelDays = [...actualDays, ...estimatedDays].sort((a, b) => a.date.localeCompare(b.date));
   
@@ -148,7 +153,7 @@ export function buildSolarModel(readings, settings = {}, now = new Date()) {
   const intradayProfile = learnIntradayProfile(allReadings, dailyClosingRecords);
   
   const liveTodayGeneration = computeLiveTodayGeneration(allReadings, dailyClosingRecords, now);
-  const forecasts = buildForecasts(actualDays, patterns, intradayProfile, forecastConfidence, now, capacityKW, liveTodayGeneration);
+  const forecasts = buildForecasts(actualDays, patterns, intradayProfile, forecastConfidence, now, capacityKW, liveTodayGeneration, validations);
   const aggregates = aggregateSeries(actualDays); // Validated metrics only consume actual DCRs
   
   const dataQuality = buildDataQuality(allReadings, dailyClosingRecords, actualDays, estimatedDays, forecastConfidence);
@@ -261,7 +266,7 @@ function learnIntradayProfile(allReadings, dailyClosingRecords) {
   return result;
 }
 
-function buildForecasts(actualDays, patterns, intradayProfile, baseConfidence, now, capacityKW, liveTodayGeneration = 0) {
+function buildForecasts(actualDays, patterns, intradayProfile, baseConfidence, now, capacityKW, liveTodayGeneration = 0, validations = {}) {
   const dayCount = actualDays.length;
   const lastDate = actualDays.length ? actualDays[actualDays.length - 1].date : toDateKey(now);
   
@@ -292,21 +297,37 @@ function buildForecasts(actualDays, patterns, intradayProfile, baseConfidence, n
     let source = "learned historical pattern";
     let actualValue = 0;
 
+    const validation = validations[date];
+    if (validation && validation.forecast !== undefined) {
+      predicted = validation.forecast;
+    }
+
     if (date === toDateKey(now)) {
       kind = "today";
       source = "composite live prediction";
       actualValue = liveTodayGeneration;
       
-      const currentHour = now.getHours();
-      const completionPct = intradayProfile.get(currentHour) || 0;
-      
-      if (completionPct > 0.05 && completionPct < 0.95 && liveTodayGeneration > 0) {
-        const projectedEOD = liveTodayGeneration / completionPct;
-        const weight = completionPct * completionPct;
-        predicted = (predicted * (1 - weight)) + (projectedEOD * weight);
+      const nowPhase = getSolarPhase(now, now);
+      if (nowPhase === SOLAR_PHASE.POST || nowPhase === SOLAR_PHASE.CLOSED) {
+        // Post-generation window: generation is done. Isolate from back-testing.
+        // Use the snapshot forecast or baseline, do not apply intraday blending.
+        if (validation && validation.forecast !== undefined) {
+           source = "snapshot historical prediction";
+        } else {
+           source = "baseline historical prediction";
+        }
+      } else {
+        const currentHour = now.getHours();
+        const completionPct = intradayProfile.get(currentHour) || 0;
+        
+        if (completionPct > 0.05 && completionPct < 0.95 && liveTodayGeneration > 0) {
+          const projectedEOD = liveTodayGeneration / completionPct;
+          const weight = completionPct * completionPct;
+          predicted = (predicted * (1 - weight)) + (projectedEOD * weight);
+        }
+        
+        predicted = Math.max(predicted, liveTodayGeneration);
       }
-      
-      predicted = Math.max(predicted, liveTodayGeneration);
     }
 
     sevenDay.push({

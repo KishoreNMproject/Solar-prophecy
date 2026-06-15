@@ -1,7 +1,8 @@
 const DB_NAME = "solar-prophecy";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const READING_STORE = "readings";
 const SETTINGS_STORE = "settings";
+const VALIDATIONS_STORE = "validations";
 
 export async function openDatabase() {
   return new Promise((resolve, reject) => {
@@ -14,6 +15,9 @@ export async function openDatabase() {
       }
       if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
         db.createObjectStore(SETTINGS_STORE, { keyPath: "key" });
+      }
+      if (!db.objectStoreNames.contains(VALIDATIONS_STORE)) {
+        db.createObjectStore(VALIDATIONS_STORE, { keyPath: "date" });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -68,17 +72,30 @@ export async function saveSettings(db, settings) {
   await Promise.all(Object.entries(settings).map(([key, value]) => txRequest(store.put({ key, value }))));
 }
 
+export async function getValidations(db) {
+  if (!db.objectStoreNames.contains(VALIDATIONS_STORE)) return {};
+  const records = await txRequest(db.transaction(VALIDATIONS_STORE).objectStore(VALIDATIONS_STORE).getAll());
+  return Object.fromEntries(records.map((record) => [record.date, record]));
+}
+
+export async function saveValidation(db, record) {
+  if (!db.objectStoreNames.contains(VALIDATIONS_STORE)) return;
+  const store = db.transaction(VALIDATIONS_STORE, "readwrite").objectStore(VALIDATIONS_STORE);
+  await txRequest(store.put(record));
+}
+
 export async function exportBackup(db) {
   return {
-    schema: "solar-prophecy.backup.v1",
+    schema: "solar-prophecy.backup.v2",
     exportedAt: new Date().toISOString(),
     readings: await getReadings(db),
-    settings: await getSettings(db)
+    settings: await getSettings(db),
+    validations: Object.values(await getValidations(db))
   };
 }
 
 export async function importBackup(db, backup) {
-  if (!backup || backup.schema !== "solar-prophecy.backup.v1" || !Array.isArray(backup.readings)) {
+  if (!backup || !backup.schema || !backup.schema.startsWith("solar-prophecy.backup.v") || !Array.isArray(backup.readings)) {
     throw new Error("Unsupported or invalid backup file.");
   }
 
@@ -127,6 +144,17 @@ export async function importBackup(db, backup) {
     const settingsTx = db.transaction(SETTINGS_STORE, "readwrite");
     await txRequest(settingsTx.objectStore(SETTINGS_STORE).clear());
     await saveSettings(db, backup.settings);
+  }
+
+  if (backup.validations && Array.isArray(backup.validations) && db.objectStoreNames.contains(VALIDATIONS_STORE)) {
+    const valTx = db.transaction(VALIDATIONS_STORE, "readwrite");
+    const valStore = valTx.objectStore(VALIDATIONS_STORE);
+    await txRequest(valStore.clear());
+    for (const val of backup.validations) {
+      if (val.date) {
+        valStore.put(val);
+      }
+    }
   }
 }
 

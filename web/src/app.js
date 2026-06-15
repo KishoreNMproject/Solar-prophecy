@@ -11,7 +11,9 @@ import {
   importBackup,
   openDatabase,
   saveReading,
-  saveSettings
+  saveSettings,
+  getValidations,
+  saveValidation
 } from "./db.js";
 
 let db;
@@ -387,7 +389,11 @@ async function refresh(message = "") {
   try {
     readings = await getReadings(db);
     settings = await getSettings(db);
-    model = buildSolarModel(readings, settings);
+    const validations = await getValidations(db);
+    model = buildSolarModel(readings, settings, validations);
+    
+    await syncValidations(validations);
+    
     renderGauge();
     renderModelStatus();
     renderMetrics();
@@ -402,6 +408,57 @@ async function refresh(message = "") {
   } catch (err) {
     console.error("Refresh failed:", err);
     els.entryMessage.textContent = "Error: " + err.message;
+  }
+}
+
+async function syncValidations(validations) {
+  const d = model.dashboard;
+  const now = new Date();
+  const todayDate = d.isDayClosed && d.todayPhase === "Closed Day" ? null : model.forecasts.sevenDay.find(f => f.kind === "today")?.date || new Date().toISOString().split("T")[0];
+
+  let needsRefresh = false;
+
+  // 1. Capture Snapshot for Today (if missing)
+  if (todayDate && !validations[todayDate]) {
+    const expectedToday = d.expectedTodayGeneration;
+    if (expectedToday !== undefined && expectedToday > 0) {
+      const pendingRecord = {
+        date: todayDate,
+        forecast: expectedToday,
+        actual: null,
+        status: "pending",
+        capturedAt: now.toISOString()
+      };
+      await saveValidation(db, pendingRecord);
+      validations[todayDate] = pendingRecord;
+      needsRefresh = true;
+    }
+  }
+
+  // 2. Finalize Pending Snapshots
+  const dcrs = model.dailyClosingRecords;
+  for (const dcr of dcrs) {
+    const val = validations[dcr.date];
+    if (val && val.status === "pending" && (dcr.date < todayDate || d.isDayClosed)) {
+      val.actual = dcr.value; // Wait, dcr.value is virtual cumulative value! We need generation!
+      // Find generation from actualDailySeries
+      const actualDay = model.actualDailySeries.find(a => a.date === dcr.date);
+      if (actualDay) {
+        val.actual = actualDay.generation;
+        val.error = val.actual - val.forecast;
+        val.errorPct = val.forecast > 0 ? (val.error / val.forecast) * 100 : 0;
+        val.status = "validated";
+        await saveValidation(db, val);
+        needsRefresh = true;
+      }
+    }
+  }
+
+  if (needsRefresh) {
+    // We only refresh the model quietly, no full UI rerender yet.
+    // The main refresh() will continue and render the updated model state.
+    const updatedValidations = await getValidations(db);
+    model = buildSolarModel(readings, settings, updatedValidations);
   }
 }
 
@@ -623,6 +680,7 @@ function renderCharts() {
   const daily = model.dailySeries.slice(-45).map((day) => ({ 
     value: day.generation, 
     actualValue: day.actualValue || 0,
+    forecastValue: day.forecastValue,
     kind: day.kind, 
     date: day.date,
     confidence: day.confidence
