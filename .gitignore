@@ -9,3 +9,4 @@ local.properties
 # Antigravity / AGY agents
 .agents/
 .agents/**
+*.md
