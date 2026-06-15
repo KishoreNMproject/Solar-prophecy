@@ -1,4 +1,4 @@
-export let CURRENT_VERSION = "1.6.4"; // Fallback for web
+export let CURRENT_VERSION = "1.7.1"; // Fallback for web
 try {
   if (window.SolarAndroid && window.SolarAndroid.getAppVersion) {
     const androidVer = window.SolarAndroid.getAppVersion();
@@ -267,9 +267,13 @@ function updateModalToReady(modal, release) {
   const actionsContainer = modal.querySelector(".modal-actions");
   actionsContainer.innerHTML = `
     <div style="background: var(--brand); color: #fff; padding: 12px; border-radius: 12px; margin-bottom: 16px; text-align: center; font-weight: 800; font-size: 0.95rem; box-shadow: 0 4px 12px var(--brand-glow);">
-      ✅ Update ready to install
+      ✅ Update downloaded successfully.
     </div>
-    <button class="primary" id="otaInstallBtn">Install Now</button>
+    <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 16px; text-align: center;">
+      For security and compatibility with modern Android versions, Solar Prophecy will open your Downloads folder.<br><br>
+      <strong>Tap the downloaded SolarProphecy APK to continue installation.</strong>
+    </p>
+    <button class="primary" id="otaInstallBtn">Open Downloads Folder</button>
     <button class="secondary" id="otaLaterBtn">Later</button>
   `;
 

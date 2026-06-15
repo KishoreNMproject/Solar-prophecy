@@ -22,7 +22,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
-import androidx.core.content.FileProvider;
+
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.ServiceWorkerClientCompat;
 import androidx.webkit.ServiceWorkerControllerCompat;
@@ -303,26 +303,8 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void installUpdate(String versionName) {
-            Log.i(TAG, "Install button pressed for version: " + versionName);
-            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "SolarProphecy/SolarProphecy-" + versionName + ".apk");
-            if (file.exists()) {
-                try {
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    Uri apkUri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", file);
-                    Log.i(TAG, "APK URI generated: " + apkUri.toString());
-                    intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
-                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    Log.i(TAG, "Install intent launched");
-                    startActivity(intent);
-                } catch (Exception e) {
-                    Log.e(TAG, "Install launch failed: " + e.getMessage(), e);
-                    runOnUiThread(() -> webView.evaluateJavascript("window.onInstallFailed('" + e.getMessage().replace("'", "\\'") + "')", null));
-                }
-            } else {
-                Log.e(TAG, "Update file not found at: " + file.getAbsolutePath());
-                runOnUiThread(() -> webView.evaluateJavascript("window.onInstallFailed('File not found')", null));
-            }
+            Log.i(TAG, "Install button pressed. Opening Downloads folder for user to install version: " + versionName);
+            openDownloadsFolder();
         }
 
         @JavascriptInterface
