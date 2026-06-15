@@ -290,6 +290,7 @@ public class MainActivity extends Activity {
             request.setTitle("Solar Prophecy Update");
             request.setDescription("Downloading version " + versionName);
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setMimeType("application/vnd.android.package-archive");
             request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "SolarProphecy/SolarProphecy-" + versionName + ".apk");
             
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
