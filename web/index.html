@@ -39,7 +39,11 @@
         </div>
         <div class="topbar-actions" style="display: flex; align-items: center; gap: 12px;">
           <button id="stickyHomeBtn" class="primary" style="display: none; padding: 8px 12px; font-size: 0.9rem; border-radius: 12px;">
-            <span class="home-icon">🏠</span><span class="home-text" style="margin-left: 6px;">Home</span>
+            <span class="home-icon" style="display: flex; align-items: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              </svg>
+            </span><span class="home-text" style="margin-left: 6px;">Home</span>
           </button>
           <div class="status-pill" id="modelStatus">Initializing...</div>
         </div>
