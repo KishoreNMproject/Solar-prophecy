@@ -1,4 +1,4 @@
-export let CURRENT_VERSION = "1.7.0"; // Fallback for web
+export let CURRENT_VERSION = "1.7.4"; // Fallback for web
 try {
   if (window.SolarAndroid && window.SolarAndroid.getAppVersion) {
     const androidVer = window.SolarAndroid.getAppVersion();
@@ -267,10 +267,14 @@ function updateModalToReady(modal, release) {
   const actionsContainer = modal.querySelector(".modal-actions");
   actionsContainer.innerHTML = `
     <div style="background: var(--brand); color: #fff; padding: 12px; border-radius: 12px; margin-bottom: 16px; text-align: center; font-weight: 800; font-size: 0.95rem; box-shadow: 0 4px 12px var(--brand-glow);">
-      ✅ Update ready to install
+      ✅ Update downloaded successfully.
     </div>
-    <button class="primary" id="otaInstallBtn">Install Now</button>
-    <button class="secondary" id="otaLaterBtn">Later</button>
+    <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 16px; text-align: center;">
+      <strong>Swipe down and tap the system notification to install the update.</strong><br><br>
+      For security and compatibility with modern Android versions, Solar Prophecy relies on the native Android installer.
+    </p>
+    <button class="secondary" id="otaInstallBtn" style="margin-bottom: 8px;">Open Downloads Folder (Fallback)</button>
+    <button class="primary" id="otaLaterBtn">Got It</button>
   `;
 
   modal.querySelector("#otaInstallBtn").addEventListener("click", () => {
