@@ -1,4 +1,4 @@
-export let CURRENT_VERSION = "1.7.6"; // Fallback for web
+export let CURRENT_VERSION = "1.7.7"; // Fallback for web
 try {
   if (window.SolarAndroid && window.SolarAndroid.getAppVersion) {
     const androidVer = window.SolarAndroid.getAppVersion();
@@ -66,11 +66,24 @@ export async function checkForUpdates() {
 }
 
 export async function manualUpdateCheck() {
+  const requestUrl = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+  let httpStatus = "N/A";
+  let responsePayload = "N/A";
+  let exceptionType = "None";
+  let stackTrace = "None";
+
   try {
     const isAndroid = !!window.SolarAndroid;
-    const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
-    if (!response.ok) throw new Error("Failed to fetch latest release.");
-    const release = await response.json();
+    const response = await fetch(requestUrl);
+    httpStatus = response.status;
+    
+    responsePayload = await response.text();
+    
+    if (!response.ok) {
+      throw new Error(`HTTP Error ${response.status}`);
+    }
+    
+    const release = JSON.parse(responsePayload);
     const latestVersion = release.tag_name.replace(/^v/, "");
 
     const cmp = compareVersions(latestVersion, CURRENT_VERSION);
@@ -104,8 +117,30 @@ export async function manualUpdateCheck() {
     }
     return latestVersion;
   } catch (err) {
-    console.error(err);
-    showAlert("Update Check Failed", "Could not reach the update server. Please check your internet connection and try again.");
+    console.error("OTA Check Failed:", err);
+    exceptionType = err.name || "Error";
+    stackTrace = err.stack || err.toString();
+    
+    let diagHtml = `
+      <div style="text-align: left; background: var(--surface-2); padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.7rem; color: var(--rose); overflow-x: auto; max-height: 200px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--rose);">
+        <strong>URL:</strong> ${requestUrl}<br>
+        <strong>Status:</strong> ${httpStatus}<br>
+        <strong>Exception:</strong> ${exceptionType}<br>
+        <strong>Stack:</strong> ${stackTrace}<br>
+        <strong>Payload:</strong> ${responsePayload.substring(0, 300)}
+      </div>
+      <p style="font-size: 0.8rem; color: var(--muted); text-align: center;">Diagnostic snapshot captured. Please provide this to support.</p>
+    `;
+
+    renderGlassModal({
+      icon: "⚠️",
+      title: "Update Check Failed",
+      subtitle: "Diagnostic Data",
+      contentHtml: diagHtml,
+      actions: [
+        { label: "Close", primary: true, onClick: (modal) => modal.remove() }
+      ]
+    });
     return null;
   }
 }
