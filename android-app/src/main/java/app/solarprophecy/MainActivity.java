@@ -286,6 +286,26 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void startUpdateDownload(String url, String versionName) {
             Log.i(TAG, "Download started for version: " + versionName + " from URL: " + url);
+            
+            // Temporary Mitigation: Clean up previous Solar Prophecy APKs
+            try {
+                java.io.File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                java.io.File solarDir = new java.io.File(downloadDir, "SolarProphecy");
+                if (solarDir.exists() && solarDir.isDirectory()) {
+                    java.io.File[] files = solarDir.listFiles();
+                    if (files != null) {
+                        for (java.io.File file : files) {
+                            if (file.isFile() && file.getName().endsWith(".apk")) {
+                                boolean deleted = file.delete();
+                                Log.i(TAG, "Cleanup: Deleted old APK " + file.getName() + " -> " + deleted);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to clean up old OTA files", e);
+            }
+
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
             request.setTitle("Solar Prophecy Update");
             request.setDescription("Downloading version " + versionName);
