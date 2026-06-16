@@ -107,56 +107,38 @@ export function renderBarChart(canvas, points, options = {}) {
         const forecastFullHeight = Math.max(2, (forecastVal / max) * box.height);
         const forecastY = box.bottom - forecastFullHeight;
 
+        const topY = Math.min(actualY, forecastY);
+
         if (barWidth < 14) {
-          // Narrow bars (vertical text)
+          // Narrow bars: vertical stacking above the bar
           ctx.save();
-          if (forecastVal > actualVal) {
-             ctx.translate(cx, forecastY - 4);
-          } else {
-             ctx.translate(cx, actualY - 4);
-          }
+          ctx.translate(cx, topY - 4);
           ctx.rotate(-Math.PI / 2);
           ctx.textAlign = "left";
           ctx.textBaseline = "middle";
           ctx.font = "800 9px Inter, sans-serif";
-          ctx.fillText((forecastVal > actualVal ? "est " : "act ") + Math.max(forecastVal, actualVal).toFixed(1), 0, 0);
-          ctx.restore();
           
-          const lowerVal = forecastVal > actualVal ? actualVal : forecastVal;
-          const lowerHeight = forecastVal > actualVal ? actualHeight : forecastFullHeight;
-          const lowerY = forecastVal > actualVal ? actualY : forecastY;
-          const lowerPrefix = forecastVal > actualVal ? "act " : "est ";
-          
-          if (lowerVal > 0 && lowerHeight > 24) {
-            ctx.save();
-            ctx.translate(cx, lowerY + 4);
-            ctx.rotate(-Math.PI / 2);
-            ctx.textAlign = "right";
-            ctx.textBaseline = "middle";
-            ctx.font = "800 9px Inter, sans-serif";
-            ctx.fillStyle = "rgba(255,255,255,0.9)";
-            ctx.fillText(lowerPrefix + lowerVal.toFixed(1), 0, 0);
-            ctx.restore();
+          if (forecastVal > 0) {
+            ctx.fillStyle = COLORS.forecast;
+            ctx.fillText(forecastVal.toFixed(1), 12, 0); // Further up
           }
+          if (actualVal > 0 || isToday) {
+            ctx.fillStyle = COLORS.actual;
+            ctx.fillText(actualVal.toFixed(1), 0, 0); // Closer to bar
+          }
+          ctx.restore();
         } else {
-          // Wide bars (horizontal text)
+          // Wide bars: vertical stacking above the bar
           ctx.textAlign = "center";
           ctx.font = "800 9px Inter, sans-serif";
           
-          if (forecastVal > actualVal) {
-             ctx.fillStyle = COLORS.ink;
-             ctx.fillText("est " + forecastVal.toFixed(1), cx, forecastY - 4);
-             if (actualVal > 0 && actualHeight > 14) {
-               ctx.fillStyle = "rgba(255,255,255,0.9)";
-               ctx.fillText("act " + actualVal.toFixed(1), cx, actualY + 10);
-             }
-          } else {
-             ctx.fillStyle = COLORS.ink;
-             ctx.fillText("act " + actualVal.toFixed(1), cx, actualY - 4);
-             if (forecastVal > 0 && forecastFullHeight > 14) {
-               ctx.fillStyle = "rgba(255,255,255,0.9)";
-               ctx.fillText("est " + forecastVal.toFixed(1), cx, forecastY + 10);
-             }
+          if (forecastVal > 0) {
+            ctx.fillStyle = COLORS.forecast;
+            ctx.fillText(forecastVal.toFixed(1), cx, topY - 14);
+          }
+          if (actualVal > 0 || isToday) {
+            ctx.fillStyle = COLORS.actual;
+            ctx.fillText(actualVal.toFixed(1), cx, topY - 4);
           }
         }
       } else {
