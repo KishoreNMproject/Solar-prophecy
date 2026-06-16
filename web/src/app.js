@@ -173,15 +173,21 @@ function bindEvents() {
     const touchEndX = e.changedTouches[0].clientX;
     const touchEndY = e.changedTouches[0].clientY;
     
-    // Edge activation zone: 0 to 30px from left edge
-    if (touchStartX > 30) return;
+    const isMenuOpen = els.sideNav.classList.contains('open');
+
+    // If menu is closed, only allow swipes starting from the left edge (0-30px)
+    if (!isMenuOpen && touchStartX > 30) return;
 
     const deltaX = touchEndX - touchStartX;
     const deltaY = Math.abs(touchEndY - touchStartY);
 
-    // Intentional horizontal swipe towards right
-    if (deltaX > 50 && deltaY < 30) {
+    // Intentional horizontal swipe towards right to open
+    if (!isMenuOpen && deltaX > 50 && deltaY < 30) {
       openMenu();
+    }
+    // Intentional horizontal swipe towards left to close
+    else if (isMenuOpen && deltaX < -50 && deltaY < 30) {
+      closeMenu();
     }
   }, { passive: true });
 
