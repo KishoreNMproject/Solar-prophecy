@@ -797,6 +797,8 @@ function renderCharts() {
   // Monthly Chart
   const monthlyPanel = document.querySelector("#monthlyPanel");
   const monthlyLearningInfo = document.querySelector("#monthlyLearningInfo");
+  const monthlyChartWrapper = document.querySelector("#monthlyChartWrapper");
+  
   if (isDeveloping) {
     monthlyPanel.classList.add("compact");
     if (monthlyLearningInfo) {
@@ -805,22 +807,34 @@ function renderCharts() {
       document.querySelector("#monthlyCollectedDays").textContent = `${q.actualDayCount} / 30`;
       document.querySelector("#monthlyRemainingDays").textContent = Math.max(0, 30 - q.actualDayCount);
     }
+    if (monthlyChartWrapper) {
+      monthlyChartWrapper.style.display = "none";
+    }
   } else {
     monthlyPanel.classList.remove("compact");
     if (monthlyLearningInfo) monthlyLearningInfo.hidden = true;
+    if (monthlyChartWrapper) {
+      monthlyChartWrapper.style.display = "block";
+    }
     const monthly = monthlyChartPoints();
     renderBarChart(document.querySelector("#monthlyChart"), monthly, { label: "monthly kWh" });
-  }
-
   // Forecast Chart
   const forecastPanel = document.querySelector("#forecastPanel");
   const forecastPlaceholder = forecastPanel.querySelector(".learning-placeholder");
+  const forecastChartWrapper = document.querySelector("#forecastChartWrapper");
+  
   if (isLearning) {
     forecastPanel.classList.add("compact");
     forecastPlaceholder.hidden = false;
+    if (forecastChartWrapper) {
+      forecastChartWrapper.style.display = "none";
+    }
   } else {
     forecastPanel.classList.remove("compact");
     forecastPlaceholder.hidden = true;
+    if (forecastChartWrapper) {
+      forecastChartWrapper.style.display = "block";
+    }
     const forecast = model.forecastSeries.map((day) => ({ 
       value: day.generation, 
       actualValue: day.actualValue || 0,
