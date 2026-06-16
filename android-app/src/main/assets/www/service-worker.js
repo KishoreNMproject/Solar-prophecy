@@ -1,9 +1,11 @@
-const CACHE_NAME = "solar-prophecy-v1.8.4";
+const CACHE_NAME = "solar-prophecy-v1.8.5";
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./manifest.webmanifest",
+  "./icon-192.png",
+  "./icon-512.png",
   "./src/analytics.js",
   "./src/app.js",
   "./src/charts.js",
