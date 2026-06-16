@@ -230,6 +230,11 @@ export function renderLineChart(canvas, points, options = {}) {
         ctx.lineWidth = 2;
         ctx.stroke();
       }
+      
+      ctx.fillStyle = COLORS.ink;
+      ctx.font = '600 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(point.value.toFixed(1), pos.x, pos.y + 14);
     }
   });
   
