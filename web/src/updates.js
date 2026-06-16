@@ -1,4 +1,4 @@
-export let CURRENT_VERSION = "1.8.9"; // Fallback for web
+export let CURRENT_VERSION = "1.9.0"; // Fallback for web
 try {
   if (window.SolarAndroid && window.SolarAndroid.getAppVersion) {
     const androidVer = window.SolarAndroid.getAppVersion();
@@ -97,8 +97,9 @@ export async function manualUpdateCheck() {
       renderGlassModal({
         icon: "✅",
         title: "Up to date",
-        subtitle: "Software Status",
+        versionInfo: { current: CURRENT_VERSION, latest: latestVersion },
         contentHtml: `<p>You are running the latest version of Solar Prophecy (v${CURRENT_VERSION}).</p>`,
+        headerAction: { label: "☕ Support Us", onClick: () => { document.querySelector('.modal-overlay').remove(); showSupportModal(); } },
         actions: [
           { label: "Close", primary: true, onClick: (modal) => modal.remove() }
         ]
@@ -133,12 +134,13 @@ export async function manualUpdateCheck() {
     `;
 
     renderGlassModal({
-      icon: "⚠️",
-      title: "Update Check Failed",
-      subtitle: "Diagnostic Data",
-      contentHtml: diagHtml,
+      icon: "🎉",
+      title: "Update Installed",
+      subtitle: `What's new in v${CURRENT_VERSION}`,
+      contentHtml: marked.parse(releaseNotes),
+      headerAction: { label: "☕ Support Us", onClick: () => { document.querySelector('.modal-overlay').remove(); showSupportModal(); } },
       actions: [
-        { label: "Close", primary: true, onClick: (modal) => modal.remove() }
+        { label: "Awesome!", primary: true, onClick: (modal) => modal.remove() }
       ]
     });
     return null;
@@ -188,6 +190,7 @@ export function showAboutModal() {
     subtitle: "About",
     versionInfo: { current: CURRENT_VERSION, latest: BUILD_DATE },
     contentHtml: contentHtml,
+    headerAction: { label: "☕ Support Us", onClick: () => { overlay.remove(); showSupportModal(); } },
     actions: [
       { label: "Close", primary: true, onClick: (modal) => modal.remove() }
     ]
@@ -252,10 +255,11 @@ function showUpdateModal(release, isAndroid) {
 
   activeUpdateModal = renderGlassModal({
     icon: isAndroid ? "🚀" : "📱",
-    title: isAndroid ? "Solar Prophecy Update Available" : "Android App Update Available",
-    subtitle: `What's New`,
+    title: `Update Available: v${release.tag_name.replace(/^v/, "")}`,
+    subtitle: "Release Notes",
     versionInfo: { current: CURRENT_VERSION, latest: release.tag_name },
     contentHtml: changelogHtml,
+    headerAction: { label: "☕ Support Us", onClick: () => { activeUpdateModal.remove(); showSupportModal(); } },
     actions: [
       { 
         label: isAndroid ? "Download Update" : "Download Android App", 
@@ -384,7 +388,36 @@ window.onUpdateDownloadProgress = function(progress, status, error) {
   }
 };
 
-function renderGlassModal({ icon, title, subtitle, versionInfo, contentHtml, actions }) {
+export function showSupportModal() {
+  const isDesktop = !window.SolarAndroid && !('ontouchstart' in window) && window.innerWidth > 768;
+  const upiId = atob("c3Byb3V0aW5na2lzaG9yZTIwMDVAb2theGlz");
+  const upiLink = `upi://pay?pa=${upiId}&pn=Solar%20Prophecy&tn=Support%20Solar%20Prophecy`;
+
+  const contentHtml = `
+    <p style="margin-bottom: 12px; font-size: 0.95rem;">Solar Prophecy is developed and maintained independently.</p>
+    <p style="margin-bottom: 12px; font-size: 0.95rem;">If the app has helped you track, analyze, and forecast your solar generation, consider supporting future development.</p>
+    <p style="margin-bottom: 12px; font-size: 0.95rem;">Your support helps fund ongoing development, testing, maintenance, and future improvements.</p>
+    <p style="margin-bottom: 16px; font-size: 0.85rem; color: var(--muted);">Support is completely optional. All Solar Prophecy features remain free and fully available.</p>
+    
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px;">
+      <img src="support-qr.png" alt="Support QR Code" style="width: 200px; height: 200px; border-radius: 8px; background: white; padding: 8px;">
+      ${!isDesktop ? `<a href="${upiLink}" class="primary" style="display: inline-block; padding: 12px 24px; text-decoration: none; border-radius: 12px; font-weight: bold; width: 100%; text-align: center; box-sizing: border-box;">💖 Pay via UPI</a>` : ''}
+    </div>
+    <p class="eyebrow" style="text-align: center; margin-top: 20px;">Solar Prophecy</p>
+  `;
+
+  renderGlassModal({
+    icon: "☕",
+    title: "Support",
+    subtitle: "Fuel the Development",
+    contentHtml: contentHtml,
+    actions: [
+      { label: "Close", primary: true, onClick: (modal) => modal.remove() }
+    ]
+  });
+}
+
+function renderGlassModal({ icon, title, subtitle, versionInfo, contentHtml, actions, headerAction }) {
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay";
 
@@ -403,6 +436,7 @@ function renderGlassModal({ icon, title, subtitle, versionInfo, contentHtml, act
       <div class="update-header">
         <span class="update-icon">${icon}</span>
         <h2 class="update-title">${title}</h2>
+        ${headerAction ? `<button id="headerActionBtn" class="glass-button" style="margin-left: auto; padding: 4px 8px; font-size: 0.85rem; color: var(--brand); font-weight: bold;">${headerAction.label}</button>` : ""}
       </div>
       ${versionInfoHtml}
       <div class="changelog">
@@ -424,6 +458,10 @@ function renderGlassModal({ icon, title, subtitle, versionInfo, contentHtml, act
   actions.forEach((action, i) => {
     overlay.querySelector(`#modalAction${i}`).addEventListener("click", () => action.onClick(overlay));
   });
+
+  if (headerAction) {
+    overlay.querySelector("#headerActionBtn").addEventListener("click", () => headerAction.onClick(overlay));
+  }
 
   return overlay;
 }

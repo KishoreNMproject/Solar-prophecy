@@ -1,6 +1,6 @@
 import { buildSolarModel } from "./analytics.js";
 import { renderBarChart, renderLineChart } from "./charts.js";
-import { checkForUpdates, manualUpdateCheck, showAboutModal, CURRENT_VERSION, downloadLatestApk } from "./updates.js";
+import { checkForUpdates, manualUpdateCheck, showAboutModal, showSupportModal, CURRENT_VERSION, downloadLatestApk } from "./updates.js";
 import { initTheme, applyTheme, getActiveThemeName } from "./theme.js";
 import { showAlert, showDangerConfirm } from "./dialog.js";
 import {
@@ -80,6 +80,7 @@ const els = {
   closeNav: document.getElementById('closeNav'),
   navCheckUpdates: document.getElementById('navCheckUpdates'),
   navAbout: document.getElementById('navAbout'),
+  navSupport: document.getElementById('navSupport'),
   topbar: document.querySelector('.topbar'),
   rateDisplay: document.getElementById('rateDisplay'),
   electricityRate: document.getElementById('electricityRate'),
@@ -236,8 +237,13 @@ function bindEvents() {
   }
 
   els.navAbout.addEventListener("click", () => {
-    showAboutModal();
     closeMenu();
+    showAboutModal();
+  });
+
+  els.navSupport.addEventListener("click", () => {
+    closeMenu();
+    showSupportModal();
   });
 
   if (els.stickyHomeBtn) {
