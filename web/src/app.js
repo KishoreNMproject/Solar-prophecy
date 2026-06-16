@@ -818,6 +818,8 @@ function renderCharts() {
     }
     const monthly = monthlyChartPoints();
     renderBarChart(document.querySelector("#monthlyChart"), monthly, { label: "monthly kWh" });
+  }
+  
   // Forecast Chart
   const forecastPanel = document.querySelector("#forecastPanel");
   const forecastPlaceholder = forecastPanel.querySelector(".learning-placeholder");
