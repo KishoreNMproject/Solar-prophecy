@@ -831,7 +831,7 @@ function renderCharts() {
   const forecastPlaceholder = forecastPanel.querySelector(".learning-placeholder");
   const forecastChartWrapper = document.querySelector("#forecastChartWrapper");
   
-  if (isLearning) {
+  if (isDeveloping) {
     forecastPanel.classList.add("compact");
     forecastPlaceholder.hidden = false;
     if (forecastChartWrapper) {
