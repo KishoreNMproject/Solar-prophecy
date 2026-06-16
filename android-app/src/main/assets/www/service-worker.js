@@ -1,4 +1,4 @@
-const CACHE_NAME = "solar-prophecy-v1.8.7";
+const CACHE_NAME = "solar-prophecy-v1.8.8";
 const ASSETS = [
   "./",
   "./index.html",

@@ -1023,7 +1023,7 @@ function running(days, initialValue = 0) {
 }
 
 function rollingAverage(days, windowSize) {
-  return days.map((day, index) => {
+  const result = days.map((day, index) => {
     const window = days.slice(Math.max(0, index - windowSize + 1), index + 1);
     return { 
       value: sum(window.map((item) => item.generation)) / window.length, 
@@ -1031,6 +1031,13 @@ function rollingAverage(days, windowSize) {
       date: day.date
     };
   });
+  
+  let startIndex = 0;
+  while (startIndex < result.length && result[startIndex].value <= 0) {
+    startIndex++;
+  }
+  
+  return result.slice(startIndex);
 }
 
 function renderDailyHistory() {
