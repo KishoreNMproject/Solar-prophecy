@@ -190,7 +190,7 @@ export function showAboutModal() {
     icon: "☀️",
     title: "Solar Prophecy",
     subtitle: "About",
-    versionInfo: { current: CURRENT_VERSION + " | Build Channel: Alpha", latest: BUILD_DATE },
+    versionInfo: { current: CURRENT_VERSION, latest: BUILD_DATE },
     contentHtml: contentHtml,
     headerAction: { label: "☕ Support Us", onClick: () => { overlay.remove(); showSupportModal(); } },
     actions: [
