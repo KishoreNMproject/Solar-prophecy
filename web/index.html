@@ -12,9 +12,19 @@
   </head>
   <body>
     <nav id="sideNav" class="side-nav">
-      <div class="nav-header">
-        <button id="closeNav" class="icon-btn">&times;</button>
+      <div class="nav-header" style="justify-content: space-between; align-items: flex-start; padding-bottom: 0;">
+        <div id="navProfileArea" style="display: flex; flex-direction: column; gap: 12px; cursor: pointer; flex: 1; padding: 8px 0;">
+          <div id="navProfileAvatar" style="width: 48px; height: 48px; border-radius: 50%; background: var(--glass); display: flex; align-items: center; justify-content: center; font-weight: bold; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="var(--ink)"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          </div>
+          <div id="navProfileInfo" style="display: flex; flex-direction: column;">
+            <span id="navProfileName" style="font-weight: bold; font-size: 1rem; color: var(--ink);">Sign In</span>
+            <span id="navProfileStatus" style="font-size: 0.8rem; color: var(--muted);">Optional Cloud Sync</span>
+          </div>
+        </div>
+        <button id="closeNav" class="icon-btn" style="margin-top: 4px;">&times;</button>
       </div>
+      <hr style="border: 0; border-bottom: 1px solid var(--glass); margin: 8px 16px;">
       <ul class="nav-links">
         <li><button data-target="screen-home" class="nav-btn active">Home</button></li>
         <li><button data-target="screen-graphs" class="nav-btn">Graphs</button></li>
@@ -331,14 +341,46 @@
           </div>
 
           <div class="settings-form" style="margin-top: 16px;">
-            <div class="section-label">Cloud Sync V2 Prototype</div>
-            <div class="settings-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-              <button class="secondary" id="prototypeGoogleSignIn" type="button" style="width: 100%; border-color: var(--brand); color: var(--brand);">Sign In With Google</button>
-              <div id="prototypeSyncControls" style="display: none; width: 100%; gap: 8px; flex-direction: row;">
-                <button class="secondary" id="prototypeUploadTest" type="button" style="flex: 1;">Upload test.json</button>
-                <button class="secondary" id="prototypeDownloadTest" type="button" style="flex: 1;">Download test.json</button>
+            <div class="section-label">Cloud Sync Management</div>
+            <div class="settings-row" id="syncMgmtSignedOut" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+              <p style="font-size: 0.9rem; color: var(--muted); margin: 0;">Sign in via the side menu to manage cloud settings.</p>
+            </div>
+            <div class="settings-row" id="syncMgmtSignedIn" style="display: none; flex-direction: column; align-items: flex-start; gap: 12px; width: 100%;">
+              <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.9rem; color: var(--muted);">Status</span>
+                <span id="mgmtSyncStatus" style="font-weight: bold; font-size: 0.9rem; color: var(--ink);">Idle</span>
               </div>
-              <p id="prototypeSyncStatus" style="font-size: 0.8rem; margin: 0; color: var(--muted);"></p>
+              <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.9rem; color: var(--muted);">Last Sync</span>
+                <span id="mgmtLastSync" style="font-weight: bold; font-size: 0.9rem; color: var(--ink);">Never</span>
+              </div>
+              
+              <div id="prototypeSyncControls" style="display: flex; width: 100%; gap: 8px; flex-direction: row; margin-top: 8px;">
+                <button class="secondary" id="prototypeUploadTest" type="button" style="flex: 1;">Sync Local to Cloud</button>
+                <button class="secondary" id="prototypeDownloadTest" type="button" style="flex: 1;">Sync Cloud to Local</button>
+              </div>
+
+              <div style="width: 100%; border-top: 1px solid var(--glass); margin-top: 8px; padding-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+                <button class="secondary" id="mgmtLogOutBtn" type="button" style="width: 100%;">Log Out</button>
+                <button class="danger" id="mgmtDeleteCloudBtn" type="button" style="width: 100%;">Delete Cloud Data</button>
+                <button class="danger" id="mgmtDeleteAccountBtn" type="button" style="width: 100%; background: transparent; color: var(--danger); border: 1px solid var(--danger);">Delete Account</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-form" id="diagnosticsPanel" style="display: none; margin-top: 16px;">
+            <div class="section-label">Diagnostics (Alpha)</div>
+            <div class="settings-row" style="flex-direction: column; align-items: flex-start; gap: 4px; font-family: monospace; font-size: 0.75rem; color: var(--muted);">
+              <div><strong>Google Subject ID:</strong> <span id="diagSubjectId">N/A</span></div>
+              <div><strong>Active Drive File ID:</strong> <span id="diagFileId">N/A</span></div>
+              <div><strong>Sync Queue State:</strong> <span id="diagQueue">Empty</span></div>
+              <div><strong>Last Sync Time:</strong> <span id="diagSyncTime">Never</span></div>
+              <div><strong>Last API Error:</strong> <span id="diagApiErr">None</span></div>
+              <div><strong>OAuth Scope List:</strong> <span id="diagScope">drive.appdata</span></div>
+              <div><strong>Authentication Provider:</strong> Google</div>
+              <div><strong>App Version:</strong> <span id="diagAppVersion">v2.0.0-alpha</span></div>
+              <div><strong>Build Channel:</strong> Alpha</div>
+              <div><strong>Feature Flags:</strong> <span id="diagFlags">ENABLE_CLOUD_SYNC=true, ENABLE_HOUSEHOLD_SYNC=false</span></div>
             </div>
           </div>
         </section>

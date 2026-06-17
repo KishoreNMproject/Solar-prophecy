@@ -1,4 +1,4 @@
-export let CURRENT_VERSION = "2.0.0"; // Fallback for web
+export let CURRENT_VERSION = "2.0.0-alpha"; // Fallback for web
 try {
   if (window.SolarAndroid && window.SolarAndroid.getAppVersion) {
     const androidVer = window.SolarAndroid.getAppVersion();
@@ -11,7 +11,8 @@ try {
 export const BUILD_DATE = "June 17, 2026";
 
 export const RELEASE_NOTES = [
-  "Cloud Sync V2 Prototype (Google Drive AppData)",
+  "Session persistence fix: Silent sign-in on launch",
+  "Cloud Sync UI visibility fix",
   "Multi-screen application architecture",
   "Home screen redesign",
   "Graphs page",
@@ -189,7 +190,7 @@ export function showAboutModal() {
     icon: "☀️",
     title: "Solar Prophecy",
     subtitle: "About",
-    versionInfo: { current: CURRENT_VERSION, latest: BUILD_DATE },
+    versionInfo: { current: CURRENT_VERSION + " | Build Channel: Alpha", latest: BUILD_DATE },
     contentHtml: contentHtml,
     headerAction: { label: "☕ Support Us", onClick: () => { overlay.remove(); showSupportModal(); } },
     actions: [

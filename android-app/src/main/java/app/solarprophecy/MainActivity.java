@@ -224,6 +224,7 @@ public class MainActivity extends Activity {
             String email = account.getEmail();
             String name = account.getDisplayName();
             String photoUrl = account.getPhotoUrl() != null ? account.getPhotoUrl().toString() : "";
+            String subjectId = account.getId();
             
             Executors.newSingleThreadExecutor().execute(() -> {
                 try {
@@ -231,8 +232,8 @@ public class MainActivity extends Activity {
                     String accessToken = GoogleAuthUtil.getToken(MainActivity.this, account.getAccount(), scope);
                     
                     runOnUiThread(() -> {
-                        String js = String.format("window.onNativeOAuthSuccess('%s', '%s', '%s', '%s');",
-                            accessToken, email != null ? email : "", name != null ? name : "", photoUrl);
+                        String js = String.format("window.onNativeOAuthSuccess('%s', '%s', '%s', '%s', '%s');",
+                            accessToken, email != null ? email : "", name != null ? name : "", photoUrl, subjectId != null ? subjectId : "");
                         webView.evaluateJavascript(js, null);
                     });
                 } catch (Exception authEx) {
@@ -324,6 +325,67 @@ public class MainActivity extends Activity {
                 
                 Intent signInIntent = mGoogleSignInClient.getSignInIntent();
                 startActivityForResult(signInIntent, RC_SIGN_IN);
+            });
+        }
+
+        @JavascriptInterface
+        public void silentSignInGoogle() {
+            runOnUiThread(() -> {
+                GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestEmail()
+                        .requestScopes(new Scope("https://www.googleapis.com/auth/drive.appdata"))
+                        .build();
+
+                mGoogleSignInClient = GoogleSignIn.getClient(MainActivity.this, gso);
+                
+                Task<GoogleSignInAccount> task = mGoogleSignInClient.silentSignIn();
+                if (task.isSuccessful()) {
+                    handleSignInResult(task);
+                } else {
+                    task.addOnCompleteListener(task1 -> {
+                        try {
+                            // Check if it succeeded
+                            task1.getResult(ApiException.class);
+                            handleSignInResult(task1);
+                        } catch (ApiException e) {
+                            Log.w(TAG, "silentSignInResult:failed code=" + e.getStatusCode());
+                            // Just fail silently for the web UI since it's a silent sign-in attempt
+                            runOnUiThread(() -> webView.evaluateJavascript("window.onNativeOAuthFailure(" + e.getStatusCode() + ");", null));
+                        }
+                    });
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void signOutGoogle() {
+            runOnUiThread(() -> {
+                if (mGoogleSignInClient == null) {
+                    GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                            .requestEmail()
+                            .requestScopes(new Scope("https://www.googleapis.com/auth/drive.appdata"))
+                            .build();
+                    mGoogleSignInClient = GoogleSignIn.getClient(MainActivity.this, gso);
+                }
+                mGoogleSignInClient.signOut().addOnCompleteListener(task -> {
+                    runOnUiThread(() -> webView.evaluateJavascript("if(window.onNativeSignOutComplete) window.onNativeSignOutComplete(true);", null));
+                });
+            });
+        }
+
+        @JavascriptInterface
+        public void revokeGoogleAccess() {
+            runOnUiThread(() -> {
+                if (mGoogleSignInClient == null) {
+                    GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                            .requestEmail()
+                            .requestScopes(new Scope("https://www.googleapis.com/auth/drive.appdata"))
+                            .build();
+                    mGoogleSignInClient = GoogleSignIn.getClient(MainActivity.this, gso);
+                }
+                mGoogleSignInClient.revokeAccess().addOnCompleteListener(task -> {
+                    runOnUiThread(() -> webView.evaluateJavascript("if(window.onNativeRevokeComplete) window.onNativeRevokeComplete(true);", null));
+                });
             });
         }
 
