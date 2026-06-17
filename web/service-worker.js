@@ -1,4 +1,4 @@
-const CACHE_NAME = "solar-prophecy-v1.9.9";
+const CACHE_NAME = "solar-prophecy-v2.0.7";
 const ASSETS = [
   "./",
   "./index.html",
@@ -11,6 +11,7 @@ const ASSETS = [
   "./src/charts.js",
   "./src/db.js",
   "./src/dialog.js",
+  "./src/drivePrototype.js",
   "./src/updates.js"
 ];
 
@@ -29,5 +30,5 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));
+  event.respondWith(caches.match(event.request, { ignoreSearch: true }).then((cached) => cached || fetch(event.request)));
 });
