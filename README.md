@@ -2,6 +2,26 @@
 
 Solar Prophecy is an offline-first self-learning solar analytics app for home inverter readings. The user enters only a cumulative kWh reading and a timestamp. The app derives daily production, detects missing days, learns production patterns from history, and forecasts future generation with honest confidence scores.
 
+
+## ☕ Support Solar Prophecy
+
+**Fuel the Development**
+
+Solar Prophecy is developed and maintained independently.
+
+If the app has helped you track, analyze, and forecast your solar generation, consider supporting future development. Your support helps fund ongoing development, testing, maintenance, and future improvements.
+
+*Support is completely optional. All Solar Prophecy features remain free and fully available.*
+
+### How to Support
+
+You can scan the QR code below using any UPI app (GPay, PhonePe, Paytm, etc.) to send your support:
+
+<img src="web/support-qr.png" alt="Support QR Code" width="200" style="border-radius: 8px; background: white; padding: 8px;"/>
+
+Alternatively, if you're on a mobile device, you can use the direct link: [💖 Support us via UPI](upi://pay?pa=sproutingkishore2005@okaxis&pn=Solar%20Prophecy&tn=Support%20Solar%20Prophecy)
+
+
 ## Technology Stack
 
 - Shared web app: HTML, CSS, ES modules, Canvas charts
@@ -179,23 +199,7 @@ Run current tests:
 npm test
 ```
 
-## ☕ Support Solar Prophecy
 
-**Fuel the Development**
-
-Solar Prophecy is developed and maintained independently.
-
-If the app has helped you track, analyze, and forecast your solar generation, consider supporting future development. Your support helps fund ongoing development, testing, maintenance, and future improvements.
-
-*Support is completely optional. All Solar Prophecy features remain free and fully available.*
-
-### How to Support
-
-You can scan the QR code below using any UPI app (GPay, PhonePe, Paytm, etc.) to send your support:
-
-<img src="web/support-qr.png" alt="Support QR Code" width="200" style="border-radius: 8px; background: white; padding: 8px;"/>
-
-Alternatively, if you're on a mobile device, you can use the direct link: [💖 Pay via UPI](upi://pay?pa=sproutingkishore2005@okaxis&pn=Solar%20Prophecy&tn=Support%20Solar%20Prophecy)
 
 ## Implementation Plan
 
