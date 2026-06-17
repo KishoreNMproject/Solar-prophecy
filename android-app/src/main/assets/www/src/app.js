@@ -15,6 +15,7 @@ import {
   getValidations,
   saveValidation
 } from "./db.js";
+import { setupDrivePrototype } from "./drivePrototype.js";
 
 let db;
 let readings = [];
@@ -89,7 +90,12 @@ const els = {
   dismissAndroidPromo: document.getElementById('dismissAndroidPromo'),
   homeDownloadAndroidBtn: document.getElementById('homeDownloadAndroidBtn'),
   navDownloadAndroid: document.getElementById('navDownloadAndroid'),
-  stickyHomeBtn: document.getElementById('stickyHomeBtn')
+  stickyHomeBtn: document.getElementById('stickyHomeBtn'),
+  prototypeGoogleSignIn: document.getElementById('prototypeGoogleSignIn'),
+  prototypeSyncControls: document.getElementById('prototypeSyncControls'),
+  prototypeUploadTest: document.getElementById('prototypeUploadTest'),
+  prototypeDownloadTest: document.getElementById('prototypeDownloadTest'),
+  prototypeSyncStatus: document.getElementById('prototypeSyncStatus')
 };
 
 init();
@@ -112,6 +118,7 @@ async function init() {
   els.swipeGestureEnabled.checked = settings.swipeNavEnabled;
 
   bindEvents();
+  setupDrivePrototype(els);
   await refresh();
   if (window.SolarAndroid) {
     checkForUpdates();
