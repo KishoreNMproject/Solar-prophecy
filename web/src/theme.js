@@ -18,6 +18,13 @@ export function initTheme(settings) {
       applyTheme("system");
     }
   });
+
+  // Force update when app comes to foreground (fixes Android background suspension bugs)
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && localStorage.getItem("themeMode") === "auto") {
+      updateSolarSky();
+    }
+  });
 }
 
 export function applyTheme(mode) {
@@ -72,13 +79,11 @@ function updateSolarSky() {
   // Time-based Celestial Widget emojis
   let emoji = "🌙";
   
-  if (mins >= 300 && mins < 720) { // 05:00 - 12:00 Morning
+  if (mins >= 300 && mins < 1080) { // 05:00 - 18:00 Morning/Day
     emoji = "☀️";
-  } else if (mins >= 720 && mins < 1020) { // 12:00 - 17:00 Afternoon
-    emoji = "🌤";
-  } else if (mins >= 1020 && mins < 1140) { // 17:00 - 19:00 Evening
+  } else if (mins >= 1080 && mins < 1200) { // 18:00 - 20:00 Evening
     emoji = "🌇";
-  } else { // 19:00 - 05:00 Night
+  } else { // Night
     emoji = "🌙";
   }
 
@@ -92,13 +97,13 @@ function updateSolarSky() {
   let phase = "night";
   let isLight = false;
 
-  if (mins >= 240 && mins < 480) {
+  if (mins >= 300 && mins < 420) { // 5:00 to 7:00
     phase = "dawn";
     isLight = false;
-  } else if (mins >= 480 && mins < 960) {
+  } else if (mins >= 420 && mins < 1080) { // 7:00 to 18:00 (6 PM)
     phase = "day";
     isLight = true;
-  } else if (mins >= 960 && mins < 1140) {
+  } else if (mins >= 1080 && mins < 1200) { // 18:00 to 20:00 (8 PM)
     phase = "evening";
     isLight = false;
   } else {
@@ -113,11 +118,13 @@ function updateSolarSky() {
     body.classList.add(`cycle-${phase}`);
     html.setAttribute("data-theme", isLight ? "light" : "dark");
     
-    // Set theme color from CSS var --bg
-    setTimeout(() => {
-      const bg = getComputedStyle(document.body).getPropertyValue("--bg").trim();
-      if (bg) updateMetaThemeColor(bg);
-    }, 50);
+    // Set theme color explicitly based on phase to avoid rgb() conversion issues on Android
+    let bgColor = "#020617"; // night
+    if (phase === "dawn") bgColor = "#1e293b";
+    if (phase === "day") bgColor = "#b8dff2";
+    if (phase === "evening") bgColor = "#0f172a";
+    
+    updateMetaThemeColor(bgColor);
   }
 }
 
@@ -125,9 +132,9 @@ export function getActiveThemeName() {
   const mode = localStorage.getItem("themeMode") || "system";
   if (mode === "auto") {
     const mins = new Date().getHours() * 60 + new Date().getMinutes();
-    if (mins >= 240 && mins < 480) return "Dawn (Adaptive)";
-    if (mins >= 480 && mins < 960) return "Day (Adaptive)";
-    if (mins >= 960 && mins < 1140) return "Evening (Adaptive)";
+    if (mins >= 300 && mins < 420) return "Dawn (Adaptive)";
+    if (mins >= 420 && mins < 1080) return "Day (Adaptive)";
+    if (mins >= 1080 && mins < 1200) return "Evening (Adaptive)";
     return "Night (Adaptive)";
   }
   if (mode === "system") {
