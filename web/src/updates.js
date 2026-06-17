@@ -1,4 +1,4 @@
-export let CURRENT_VERSION = "1.9.6"; // Fallback for web
+export let CURRENT_VERSION = "1.9.7"; // Fallback for web
 try {
   if (window.SolarAndroid && window.SolarAndroid.getAppVersion) {
     const androidVer = window.SolarAndroid.getAppVersion();
@@ -401,7 +401,7 @@ export function showSupportModal() {
     
     <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px;">
       <img src="support-qr.png" alt="Support QR Code" style="width: 200px; height: 200px; border-radius: 8px; background: white; padding: 8px;">
-      ${!isDesktop ? `<a href="${upiLink}" class="primary" style="display: inline-block; padding: 12px 24px; text-decoration: none; border-radius: 12px; font-weight: bold; width: 100%; text-align: center; box-sizing: border-box;">💖 Pay via UPI</a>` : ''}
+      ${!isDesktop ? `<a href="${upiLink}" class="primary" style="display: inline-block; padding: 12px 24px; text-decoration: none; border-radius: 12px; font-weight: bold; width: 100%; text-align: center; box-sizing: border-box;">💖 Support us via UPI</a>` : ''}
     </div>
     <p class="eyebrow" style="text-align: center; margin-top: 20px;">Solar Prophecy</p>
   `;
