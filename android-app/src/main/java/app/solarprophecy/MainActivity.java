@@ -38,6 +38,15 @@ import android.graphics.Color;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.View;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.Scope;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.auth.GoogleAuthUtil;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
     private static final String TAG = "SolarProphecyOTA";
@@ -50,6 +59,8 @@ public class MainActivity extends Activity {
     private DownloadManager downloadManager;
     private long downloadId = -1;
     private Timer progressTimer;
+    private static final int RC_SIGN_IN = 9001;
+    private GoogleSignInClient mGoogleSignInClient;
 
     @Override
     @SuppressLint("SetJavaScriptEnabled")
@@ -162,6 +173,12 @@ public class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         
+        if (requestCode == RC_SIGN_IN) {
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            handleSignInResult(task);
+            return;
+        }
+        
         if (requestCode == CREATE_FILE_REQUEST_CODE) {
             if (resultCode == RESULT_OK && data != null) {
                 Uri uri = data.getData();
@@ -198,6 +215,35 @@ public class MainActivity extends Activity {
             }
         } catch (Exception e) {
             Toast.makeText(this, "Failed to save backup: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
+        try {
+            GoogleSignInAccount account = completedTask.getResult(ApiException.class);
+            String email = account.getEmail();
+            String name = account.getDisplayName();
+            String photoUrl = account.getPhotoUrl() != null ? account.getPhotoUrl().toString() : "";
+            
+            Executors.newSingleThreadExecutor().execute(() -> {
+                try {
+                    String scope = "oauth2:https://www.googleapis.com/auth/drive.appdata";
+                    String accessToken = GoogleAuthUtil.getToken(MainActivity.this, account.getAccount(), scope);
+                    
+                    runOnUiThread(() -> {
+                        String js = String.format("window.onNativeOAuthSuccess('%s', '%s', '%s', '%s');",
+                            accessToken, email != null ? email : "", name != null ? name : "", photoUrl);
+                        webView.evaluateJavascript(js, null);
+                    });
+                } catch (Exception authEx) {
+                    Log.e(TAG, "Failed to get access token", authEx);
+                    runOnUiThread(() -> webView.evaluateJavascript("window.onNativeOAuthFailure(999);", null));
+                }
+            });
+
+        } catch (ApiException e) {
+            Log.w(TAG, "signInResult:failed code=" + e.getStatusCode());
+            runOnUiThread(() -> webView.evaluateJavascript("window.onNativeOAuthFailure(" + e.getStatusCode() + ");", null));
         }
     }
 
@@ -266,6 +312,21 @@ public class MainActivity extends Activity {
     };
 
     public class SolarAndroidBridge {
+        @JavascriptInterface
+        public void startGoogleSignIn() {
+            runOnUiThread(() -> {
+                GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestEmail()
+                        .requestScopes(new Scope("https://www.googleapis.com/auth/drive.appdata"))
+                        .build();
+
+                mGoogleSignInClient = GoogleSignIn.getClient(MainActivity.this, gso);
+                
+                Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+                startActivityForResult(signInIntent, RC_SIGN_IN);
+            });
+        }
+
         @JavascriptInterface
         public String getAppVersion() {
             try {
