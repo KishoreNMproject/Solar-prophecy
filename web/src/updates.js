@@ -1,4 +1,4 @@
-export let CURRENT_VERSION = "1.9.9"; // Fallback for web
+export let CURRENT_VERSION = "2.0.0"; // Fallback for web
 try {
   if (window.SolarAndroid && window.SolarAndroid.getAppVersion) {
     const androidVer = window.SolarAndroid.getAppVersion();
@@ -8,9 +8,10 @@ try {
   console.error("Failed to read Android version", e);
 }
 
-export const BUILD_DATE = "June 13, 2026";
+export const BUILD_DATE = "June 17, 2026";
 
 export const RELEASE_NOTES = [
+  "Cloud Sync V2 Prototype (Google Drive AppData)",
   "Multi-screen application architecture",
   "Home screen redesign",
   "Graphs page",
