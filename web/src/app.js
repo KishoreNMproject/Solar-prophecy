@@ -101,6 +101,7 @@ const els = {
 init();
 
 async function init() {
+  window.refresh = refresh;
   db = await openDatabase();
   readings = await getReadings(db);
   settings = await getSettings(db);

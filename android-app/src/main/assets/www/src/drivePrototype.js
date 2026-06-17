@@ -74,7 +74,7 @@ export function setupDrivePrototype(els, db) {
 
       if (!cloudNewer && !localNewer) {
         // Eco-Friendly: Nothing changed!
-        if (manual) setStatus("Up to Date ✓");
+        if (manual) setStatus("Up to Date \u2714\ufe0f");
         return;
       }
 
@@ -106,7 +106,7 @@ export function setupDrivePrototype(els, db) {
       localStorage.setItem("lastSyncTime", now.toString());
       if (mgmtLastSync) mgmtLastSync.textContent = new Date(now).toLocaleTimeString();
       if (diagFileId && fileInfo) diagFileId.textContent = fileInfo.id;
-      setStatus("Synced ✓");
+      setStatus("Synced \u2714\ufe0f");
       
       if (merged && window.refresh) await window.refresh();
 
@@ -170,7 +170,7 @@ export function setupDrivePrototype(els, db) {
     }
     
     if (navProfileName) navProfileName.textContent = name || email;
-    if (navProfileStatus) navProfileStatus.textContent = "Signed in with Google âœ“";
+    if (navProfileStatus) navProfileStatus.textContent = "Signed in with Google \u2714\ufe0f";
     
     if (syncMgmtSignedOut) syncMgmtSignedOut.style.display = "none";
     if (syncMgmtSignedIn) syncMgmtSignedIn.style.display = "flex";
@@ -203,7 +203,7 @@ export function setupDrivePrototype(els, db) {
                 await uploadToDriveAppData(CLOUD_FILENAME, JSON.stringify(backup));
                 await saveSyncMetadata(db, { onboardingCompleted: true, onboardingChoice: 'upload' });
                 localStorage.setItem("lastSyncTime", Date.now().toString());
-                setStatus("Synced ✓");
+                setStatus("Synced \u2714\ufe0f");
                 startSyncTimer();
                 updateDiagPanel();
               }
@@ -220,7 +220,7 @@ export function setupDrivePrototype(els, db) {
                 }
                 await saveSyncMetadata(db, { onboardingCompleted: true, onboardingChoice: 'download' });
                 localStorage.setItem("lastSyncTime", Date.now().toString());
-                setStatus("Synced ✓");
+                setStatus("Synced \u2714\ufe0f");
                 startSyncTimer();
                 updateDiagPanel();
                 if (window.refresh) await window.refresh();
@@ -272,11 +272,11 @@ export function setupDrivePrototype(els, db) {
           message: `
             <div style="margin-bottom: 12px; font-weight: bold;">This feature is completely optional.<br>Solar Prophecy works fully offline without signing in.</div>
             <ul style="padding-left: 20px; line-height: 1.6; color: var(--muted); margin-bottom: 24px;">
-              <li>â˜ <strong>Cloud Backup</strong> - Keep your solar readings safely backed up.</li>
-              <li>ðŸ“± <strong>Multi-Device Access</strong> - Access your data across your devices.</li>
-              <li>ðŸ”„ <strong>Automatic Synchronization</strong> - Keep data updated between installations.</li>
-              <li>ðŸ›¡ <strong>Data Safety</strong> - Your data remains owned by you and stored in your Google account.</li>
-              <li>âš¡ <strong>Offline First</strong> - Solar Prophecy continues working without internet.</li>
+              <li>\u2601\ufe0f <strong>Cloud Backup</strong> - Keep your solar readings safely backed up.</li>
+              <li>\uD83D\uDCF1 <strong>Multi-Device Access</strong> - Access your data across your devices.</li>
+              <li>\uD83D\uDD04 <strong>Automatic Synchronization</strong> - Keep data updated between installations.</li>
+              <li>\uD83D\uDEE1\ufe0f <strong>Data Safety</strong> - Your data remains owned by you and stored in your Google account.</li>
+              <li>\u26A1 <strong>Offline First</strong> - Solar Prophecy continues working without internet.</li>
             </ul>
           `,
           actions: [
@@ -315,19 +315,17 @@ export function setupDrivePrototype(els, db) {
       if (!driveAccessToken) return;
       setStatus("Syncing...");
       try {
-        const data = {
-          message: "Hello from Solar Prophecy Prototype Alpha!",
-          timestamp: new Date().toISOString()
-        };
-        
-        const fileId = await uploadToDriveAppData("test.json", JSON.stringify(data));
-        setStatus("Synced âœ“");
-        localStorage.setItem("has_synced_cloud", "true");
+        const backup = await exportBackup(db);
+        const fileId = await uploadToDriveAppData(CLOUD_FILENAME, JSON.stringify(backup));
+        const now = Date.now().toString();
+        localStorage.setItem("lastSyncTime", now);
+        setStatus("Synced \u2714\ufe0f");
         if (mgmtLastSync) mgmtLastSync.textContent = new Date().toLocaleTimeString();
         if (diagFileId) diagFileId.textContent = fileId;
       } catch (err) {
         setStatus("Error", true);
-        document.getElementById("diagApiErr").textContent = err.message;
+        const errSpan = document.getElementById("diagApiErr");
+        if (errSpan) errSpan.textContent = err.message;
       }
     });
   }
@@ -337,17 +335,22 @@ export function setupDrivePrototype(els, db) {
       if (!driveAccessToken) return;
       setStatus("Downloading...");
       try {
-        const content = await downloadFromDriveAppData("test.json");
+        const content = await downloadFromDriveAppData(CLOUD_FILENAME);
         if (content) {
-          setStatus("Synced âœ“");
-          localStorage.setItem("has_synced_cloud", "true");
+          const cloudBackup = JSON.parse(content);
+          await importBackup(db, cloudBackup); // Overwrite local with cloud using importBackup
+          const now = Date.now().toString();
+          localStorage.setItem("lastSyncTime", now);
+          setStatus("Synced \u2714\ufe0f");
           if (mgmtLastSync) mgmtLastSync.textContent = new Date().toLocaleTimeString();
+          if (window.refresh) await window.refresh();
         } else {
           setStatus("No Cloud Data", true);
         }
       } catch (err) {
         setStatus("Error", true);
-        document.getElementById("diagApiErr").textContent = err.message;
+        const errSpan = document.getElementById("diagApiErr");
+        if (errSpan) errSpan.textContent = err.message;
       }
     });
   }
