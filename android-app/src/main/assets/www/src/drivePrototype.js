@@ -1,12 +1,16 @@
 import { showDialog, showConfirm, showDangerConfirm, showAlert } from "./dialog.js";
+import { getSyncMetadata, saveSyncMetadata, exportBackup, importBackup, mergeBackup } from "./db.js";
 
 // Cloud Sync V2 Alpha - Drive AppData Prototype
 let driveAccessToken = null;
 let googleSubjectId = null;
 let googleEmail = null;
 let googleName = null;
+    stopSyncTimer();
+let syncInterval = null;
+const CLOUD_FILENAME = "solar_prophecy_backup_v2.json";
 
-export function setupDrivePrototype(els) {
+export function setupDrivePrototype(els, db) {
   // We grab elements dynamically since we just added them to HTML
   const navProfileArea = document.getElementById("navProfileArea");
   const navProfileAvatar = document.getElementById("navProfileAvatar");
@@ -40,11 +44,110 @@ export function setupDrivePrototype(els) {
     });
   }
 
+
+  // --- ECO-FRIENDLY SYNC ENGINE ---
+  async function doEcoSync(manual = false) {
+    if (!driveAccessToken) return;
+    const meta = await getSyncMetadata(db);
+    
+    // First-Sync Safety Gate
+    if (!meta.onboardingCompleted) {
+      if (manual) showAlert("Sync Required", "Please complete the initial sync setup by signing out and signing in again.");
+      return;
+    }
+
+    if (manual) setStatus("Syncing...");
+    
+    try {
+      const fileInfo = await getFileId(CLOUD_FILENAME);
+      const cloudModified = fileInfo ? fileInfo.modifiedTime : 0;
+      
+      const lastSyncStr = localStorage.getItem("lastSyncTime");
+      const lastSyncTime = lastSyncStr ? parseInt(lastSyncStr, 10) : 0;
+      
+      const localModStr = localStorage.getItem("localLastModified");
+      const localModified = localModStr ? parseInt(localModStr, 10) : 0;
+
+      const cloudNewer = cloudModified > lastSyncTime;
+      const localNewer = localModified > lastSyncTime;
+
+      let merged = false;
+
+      if (!cloudNewer && !localNewer) {
+        // Eco-Friendly: Nothing changed!
+        if (manual) setStatus("Up to Date ✓");
+        return;
+      }
+
+      if (cloudNewer && !localNewer) {
+        // Only Cloud changed -> Download & Overwrite Local
+        const cloudDataStr = await downloadFromDriveAppData(CLOUD_FILENAME);
+        if (cloudDataStr) {
+          const cloudBackup = JSON.parse(cloudDataStr);
+          await mergeBackup(db, cloudBackup); // Use merge to safely apply
+        }
+      } else if (!cloudNewer && localNewer) {
+        // Only Local changed -> Upload to Cloud
+        const backup = await exportBackup(db);
+        await uploadToDriveAppData(CLOUD_FILENAME, JSON.stringify(backup));
+      } else if (cloudNewer && localNewer) {
+        // BOTH changed -> Download, Merge, Upload
+        const cloudDataStr = await downloadFromDriveAppData(CLOUD_FILENAME);
+        if (cloudDataStr) {
+          const cloudBackup = JSON.parse(cloudDataStr);
+          await mergeBackup(db, cloudBackup);
+          merged = true;
+        }
+        const backup = await exportBackup(db);
+        await uploadToDriveAppData(CLOUD_FILENAME, JSON.stringify(backup));
+      }
+
+      // Sync complete
+      const now = Date.now();
+      localStorage.setItem("lastSyncTime", now.toString());
+      if (mgmtLastSync) mgmtLastSync.textContent = new Date(now).toLocaleTimeString();
+      if (diagFileId && fileInfo) diagFileId.textContent = fileInfo.id;
+      setStatus("Synced ✓");
+      
+      if (merged && window.refresh) await window.refresh();
+
+    } catch (err) {
+      console.error(err);
+      setStatus("Error", true);
+      document.getElementById("diagApiErr").textContent = err.message;
+    }
+  }
+
+  function startSyncTimer() {
+    if (syncInterval) clearInterval(syncInterval);
+    syncInterval = setInterval(() => {
+      doEcoSync(false);
+    }, 5 * 60 * 1000); // 5 minutes
+  }
+
+  function stopSyncTimer() {
+    if (syncInterval) clearInterval(syncInterval);
+    syncInterval = null;
+  }
+
+
+  async function updateDiagPanel() {
+    const diagOnboardingCompleted = document.getElementById("diagOnboardingCompleted");
+    const diagOnboardingChoice = document.getElementById("diagOnboardingChoice");
+    const meta = await getSyncMetadata(db);
+    if (diagOnboardingCompleted) diagOnboardingCompleted.textContent = meta.onboardingCompleted;
+    if (diagOnboardingChoice) diagOnboardingChoice.textContent = meta.onboardingChoice || "N/A";
+  }
+  
+  // Call initially
+  updateDiagPanel();
+
   const renderSignedOut = () => {
     driveAccessToken = null;
     googleSubjectId = null;
     googleEmail = null;
     googleName = null;
+    stopSyncTimer();
 
     if (navProfileAvatar) navProfileAvatar.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="var(--ink)"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
     if (navProfileName) navProfileName.textContent = "Sign In";
@@ -68,7 +171,7 @@ export function setupDrivePrototype(els) {
     }
     
     if (navProfileName) navProfileName.textContent = name || email;
-    if (navProfileStatus) navProfileStatus.textContent = "Signed in with Google ✓";
+    if (navProfileStatus) navProfileStatus.textContent = "Signed in with Google âœ“";
     
     if (syncMgmtSignedOut) syncMgmtSignedOut.style.display = "none";
     if (syncMgmtSignedIn) syncMgmtSignedIn.style.display = "flex";
@@ -85,25 +188,61 @@ export function setupDrivePrototype(els) {
 
     renderSignedIn(name, email, photoUrl);
 
-    // If first-sync safety prompt is needed (e.g. check local flag if we've ever synced before)
-    const hasSynced = localStorage.getItem("has_synced_cloud");
-    if (!hasSynced) {
-      showDialog({
-        title: "Connected to Google Drive",
-        message: "You have successfully connected to Google Drive. Would you like to upload your local data to the cloud, or download existing cloud data to this device?",
-        actions: [
-          { label: "Upload Local to Cloud", primary: true, onClick: () => prototypeUploadTest.click() },
-          { label: "Download Cloud to Device", primary: false, onClick: () => prototypeDownloadTest.click() },
-          { label: "Cancel", primary: false }
-        ]
-      });
-    }
+    // First-Sync Safety Gate
+    getSyncMetadata(db).then(meta => {
+      if (!meta.onboardingCompleted) {
+        showDialog({
+          title: "Initial Synchronization",
+          message: "You have successfully connected to Google Drive. Would you like to upload your local data to the cloud, or download existing cloud data to this device?",
+          actions: [
+            { 
+              label: "Upload Local to Cloud", 
+              primary: true, 
+              onClick: async () => {
+                setStatus("Uploading...");
+                const backup = await exportBackup(db);
+                await uploadToDriveAppData(CLOUD_FILENAME, JSON.stringify(backup));
+                await saveSyncMetadata(db, { onboardingCompleted: true, onboardingChoice: 'upload' });
+                localStorage.setItem("lastSyncTime", Date.now().toString());
+                setStatus("Synced ✓");
+                startSyncTimer();
+                updateDiagPanel();
+              }
+            },
+            { 
+              label: "Download Cloud to Device", 
+              primary: false, 
+              onClick: async () => {
+                setStatus("Downloading...");
+                const cloudDataStr = await downloadFromDriveAppData(CLOUD_FILENAME);
+                if (cloudDataStr) {
+                  const cloudBackup = JSON.parse(cloudDataStr);
+                  await importBackup(db, cloudBackup);
+                }
+                await saveSyncMetadata(db, { onboardingCompleted: true, onboardingChoice: 'download' });
+                localStorage.setItem("lastSyncTime", Date.now().toString());
+                setStatus("Synced ✓");
+                startSyncTimer();
+                updateDiagPanel();
+                if (window.refresh) await window.refresh();
+              }
+            },
+            { label: "Cancel", primary: false }
+          ]
+        });
+      } else {
+        // Startup Sync permitted
+        doEcoSync(false);
+        startSyncTimer();
+      }
+    });
   };
 
   window.onNativeOAuthFailure = (errorCode) => {
+    let code = parseInt(errorCode, 10);
     renderSignedOut();
-    if (errorCode !== 12501 && errorCode !== 999) { // 12501 is user canceled, 999 is silent fail
-      showAlert("Sign-In Error", "Google Sign-In failed (Code: " + errorCode + ")");
+    if (code !== 12501 && code !== 999 && code !== 4) { // 12501: user canceled, 999: silent fail, 4: sign-in required
+      showAlert("Sign-In Error", "Google Sign-In failed (Code: " + code + ")");
     }
   };
 
@@ -134,11 +273,11 @@ export function setupDrivePrototype(els) {
           message: `
             <div style="margin-bottom: 12px; font-weight: bold;">This feature is completely optional.<br>Solar Prophecy works fully offline without signing in.</div>
             <ul style="padding-left: 20px; line-height: 1.6; color: var(--muted); margin-bottom: 24px;">
-              <li>☁ <strong>Cloud Backup</strong> - Keep your solar readings safely backed up.</li>
-              <li>📱 <strong>Multi-Device Access</strong> - Access your data across your devices.</li>
-              <li>🔄 <strong>Automatic Synchronization</strong> - Keep data updated between installations.</li>
-              <li>🛡 <strong>Data Safety</strong> - Your data remains owned by you and stored in your Google account.</li>
-              <li>⚡ <strong>Offline First</strong> - Solar Prophecy continues working without internet.</li>
+              <li>â˜ <strong>Cloud Backup</strong> - Keep your solar readings safely backed up.</li>
+              <li>ðŸ“± <strong>Multi-Device Access</strong> - Access your data across your devices.</li>
+              <li>ðŸ”„ <strong>Automatic Synchronization</strong> - Keep data updated between installations.</li>
+              <li>ðŸ›¡ <strong>Data Safety</strong> - Your data remains owned by you and stored in your Google account.</li>
+              <li>âš¡ <strong>Offline First</strong> - Solar Prophecy continues working without internet.</li>
             </ul>
           `,
           actions: [
@@ -183,7 +322,7 @@ export function setupDrivePrototype(els) {
         };
         
         const fileId = await uploadToDriveAppData("test.json", JSON.stringify(data));
-        setStatus("Synced ✓");
+        setStatus("Synced âœ“");
         localStorage.setItem("has_synced_cloud", "true");
         if (mgmtLastSync) mgmtLastSync.textContent = new Date().toLocaleTimeString();
         if (diagFileId) diagFileId.textContent = fileId;
@@ -201,7 +340,7 @@ export function setupDrivePrototype(els) {
       try {
         const content = await downloadFromDriveAppData("test.json");
         if (content) {
-          setStatus("Synced ✓");
+          setStatus("Synced âœ“");
           localStorage.setItem("has_synced_cloud", "true");
           if (mgmtLastSync) mgmtLastSync.textContent = new Date().toLocaleTimeString();
         } else {
@@ -232,7 +371,7 @@ export function setupDrivePrototype(els) {
         showDangerConfirm("Final Warning", "This will permanently delete your cloud copy stored in Google Drive.\n\nYour local readings, settings, and backups will NOT be deleted.", "Permanently Delete", async () => {
           setStatus("Deleting...");
           try {
-            await deleteFromDriveAppData("test.json");
+            await deleteFromDriveAppData(CLOUD_FILENAME);
             setStatus("Idle");
             showAlert("Success", "Cloud data has been deleted.");
             if (mgmtLastSync) mgmtLastSync.textContent = "Never";
@@ -251,7 +390,7 @@ export function setupDrivePrototype(els) {
       showDangerConfirm("Delete Account", "This will completely disconnect Solar Prophecy, delete cloud data, and sign you out. Local data will NOT be deleted.", "Delete Account", async () => {
         setStatus("Deleting...");
         try {
-          await deleteFromDriveAppData("test.json");
+          await deleteFromDriveAppData(CLOUD_FILENAME);
         } catch (e) {
           console.warn("Could not delete file during account deletion", e);
         }
@@ -267,20 +406,21 @@ export function setupDrivePrototype(els) {
 
 // Drive REST API Helpers
 async function getFileId(filename) {
-  const url = `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${filename}'&fields=files(id,name)`;
+  const url = `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${filename}'&fields=files(id,name,modifiedTime)`;
   const res = await fetch(url, {
     headers: { Authorization: "Bearer " + driveAccessToken }
   });
   if (!res.ok) throw new Error("Search failed: " + res.statusText);
   const data = await res.json();
   if (data.files && data.files.length > 0) {
-    return data.files[0].id;
+    return { id: data.files[0].id, modifiedTime: new Date(data.files[0].modifiedTime).getTime() };
   }
   return null;
 }
 
 async function uploadToDriveAppData(filename, content) {
-  const existingId = await getFileId(filename);
+  const fileInfo = await getFileId(filename);
+  const existingId = fileInfo ? fileInfo.id : null;
   
   const metadata = {
     name: filename,
@@ -323,8 +463,9 @@ async function uploadToDriveAppData(filename, content) {
 }
 
 async function downloadFromDriveAppData(filename) {
-  const fileId = await getFileId(filename);
-  if (!fileId) return null;
+  const fileInfo = await getFileId(filename);
+  if (!fileInfo) return null;
+  const fileId = fileInfo.id;
 
   const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
   const res = await fetch(url, {
@@ -336,8 +477,9 @@ async function downloadFromDriveAppData(filename) {
 }
 
 async function deleteFromDriveAppData(filename) {
-  const fileId = await getFileId(filename);
-  if (!fileId) return;
+  const fileInfo = await getFileId(filename);
+  if (!fileInfo) return;
+  const fileId = fileInfo.id;
 
   const url = `https://www.googleapis.com/drive/v3/files/${fileId}`;
   const res = await fetch(url, {
