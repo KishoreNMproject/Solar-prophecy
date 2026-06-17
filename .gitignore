@@ -10,4 +10,5 @@ local.properties
 .agents/
 .agents/**
 *.md
+!README.md
 audit files/
