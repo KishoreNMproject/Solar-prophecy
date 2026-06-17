@@ -361,12 +361,13 @@ td { padding: 12px; font-weight: 500; border-bottom: 1px solid var(--line); colo
 }
 .icon-btn { background: transparent; border: none; color: var(--ink); font-size: 1.8rem; cursor: pointer; padding: 4px; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
 .icon-btn:hover { background: var(--glass-tint); }
-.nav-links { list-style: none; padding: 0 16px; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.nav-links { list-style: none; padding: 0 16px 20px; margin: 0; display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; }
 .nav-btn {
-  width: 100%; text-align: left; background: transparent; border: none;
+  width: 100%; text-align: center; background: transparent; border: none;
   padding: 14px 18px; color: var(--ink); font-size: 1rem; font-weight: 600;
   cursor: pointer; border-radius: 14px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex; justify-content: center; align-items: center; gap: 8px;
 }
 .nav-btn:hover { background: var(--glass-tint); transform: scale(1.02); }
 .nav-btn.active { color: white; background: var(--brand); box-shadow: 0 4px 12px rgba(10,132,255,0.3); }
