@@ -329,6 +329,18 @@
               <input id="importData" type="file" accept="application/json" style="display: none;">
             </div>
           </div>
+
+          <div class="settings-form" style="margin-top: 16px;">
+            <div class="section-label">Cloud Sync V2 Prototype</div>
+            <div class="settings-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+              <button class="secondary" id="prototypeGoogleSignIn" type="button" style="width: 100%; border-color: var(--brand); color: var(--brand);">Sign In With Google</button>
+              <div id="prototypeSyncControls" style="display: none; width: 100%; gap: 8px; flex-direction: row;">
+                <button class="secondary" id="prototypeUploadTest" type="button" style="flex: 1;">Upload test.json</button>
+                <button class="secondary" id="prototypeDownloadTest" type="button" style="flex: 1;">Download test.json</button>
+              </div>
+              <p id="prototypeSyncStatus" style="font-size: 0.8rem; margin: 0; color: var(--muted);"></p>
+            </div>
+          </div>
         </section>
       </div>
 
