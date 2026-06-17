@@ -6,7 +6,6 @@ let driveAccessToken = null;
 let googleSubjectId = null;
 let googleEmail = null;
 let googleName = null;
-    stopSyncTimer();
 let syncInterval = null;
 const CLOUD_FILENAME = "solar_prophecy_backup_v2.json";
 
