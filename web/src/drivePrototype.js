@@ -272,11 +272,11 @@ export function setupDrivePrototype(els, db) {
           message: `
             <div style="margin-bottom: 12px; font-weight: bold;">This feature is completely optional.<br>Solar Prophecy works fully offline without signing in.</div>
             <ul style="padding-left: 20px; line-height: 1.6; color: var(--muted); margin-bottom: 24px;">
-              <li>â˜ <strong>Cloud Backup</strong> - Keep your solar readings safely backed up.</li>
-              <li>ðŸ“± <strong>Multi-Device Access</strong> - Access your data across your devices.</li>
-              <li>ðŸ”„ <strong>Automatic Synchronization</strong> - Keep data updated between installations.</li>
-              <li>ðŸ›¡ <strong>Data Safety</strong> - Your data remains owned by you and stored in your Google account.</li>
-              <li>âš¡ <strong>Offline First</strong> - Solar Prophecy continues working without internet.</li>
+              <li>☁️ <strong>Cloud Backup</strong> - Keep your solar readings safely backed up.</li>
+              <li>📱 <strong>Multi-Device Access</strong> - Access your data across your devices.</li>
+              <li>🔄 <strong>Automatic Synchronization</strong> - Keep data updated between installations.</li>
+              <li>🛡️ <strong>Data Safety</strong> - Your data remains owned by you and stored in your Google account.</li>
+              <li>⚡ <strong>Offline First</strong> - Solar Prophecy continues working without internet.</li>
             </ul>
           `,
           actions: [
