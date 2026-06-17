@@ -355,22 +355,21 @@ td { padding: 12px; font-weight: 500; border-bottom: 1px solid var(--line); colo
 }
 .nav-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid var(--line);
+  padding: 16px 20px 8px;
 }
-.nav-header h2 { margin: 0; color: var(--ink); font-size: 1.2rem; }
-.icon-btn { background: transparent; border: none; color: var(--ink); font-size: 1.5rem; cursor: pointer; }
-.nav-links { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
+.icon-btn { background: transparent; border: none; color: var(--ink); font-size: 1.8rem; cursor: pointer; padding: 4px; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+.icon-btn:hover { background: var(--glass-tint); }
+.nav-links { list-style: none; padding: 0 16px; margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .nav-btn {
   width: 100%; text-align: left; background: transparent; border: none;
-  padding: 16px 20px; color: var(--ink); font-size: 1rem; font-weight: 600;
-  cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05);
-  border-radius: 0;
+  padding: 14px 18px; color: var(--ink); font-size: 1rem; font-weight: 600;
+  cursor: pointer; border-radius: 14px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.nav-btn:hover { background: var(--glass-tint); }
-.nav-btn.active { color: var(--brand); border-left: 4px solid var(--brand); background: var(--glass-tint); }
+.nav-btn:hover { background: var(--glass-tint); transform: scale(1.02); }
+.nav-btn.active { color: white; background: var(--brand); box-shadow: 0 4px 12px rgba(10,132,255,0.3); }
 .nav-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5); opacity: 0;
   pointer-events: none; transition: opacity 0.3s; z-index: 999;
