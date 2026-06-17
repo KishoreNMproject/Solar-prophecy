@@ -239,9 +239,10 @@ export function setupDrivePrototype(els, db) {
   };
 
   window.onNativeOAuthFailure = (errorCode) => {
+    let code = parseInt(errorCode, 10);
     renderSignedOut();
-    if (errorCode !== 12501 && errorCode !== 999 && errorCode !== 4) { // 12501: user canceled, 999: silent fail, 4: sign-in required
-      showAlert("Sign-In Error", "Google Sign-In failed (Code: " + errorCode + ")");
+    if (code !== 12501 && code !== 999 && code !== 4) { // 12501: user canceled, 999: silent fail, 4: sign-in required
+      showAlert("Sign-In Error", "Google Sign-In failed (Code: " + code + ")");
     }
   };
 

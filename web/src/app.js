@@ -14,8 +14,8 @@ import {
   saveSettings,
   getValidations,
   saveValidation
-} from "./db.js";
-import { setupDrivePrototype } from "./drivePrototype.js";
+} from "./db.js?v=2.0.5";
+import { setupDrivePrototype } from "./drivePrototype.js?v=2.0.5";
 
 let db;
 let readings = [];
