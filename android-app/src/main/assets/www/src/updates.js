@@ -1,4 +1,4 @@
-export let CURRENT_VERSION = "1.9.4"; // Fallback for web
+export let CURRENT_VERSION = "1.9.5"; // Fallback for web
 try {
   if (window.SolarAndroid && window.SolarAndroid.getAppVersion) {
     const androidVer = window.SolarAndroid.getAppVersion();
