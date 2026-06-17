@@ -1,4 +1,4 @@
-export let CURRENT_VERSION = "1.9.7"; // Fallback for web
+export let CURRENT_VERSION = "1.9.8"; // Fallback for web
 try {
   if (window.SolarAndroid && window.SolarAndroid.getAppVersion) {
     const androidVer = window.SolarAndroid.getAppVersion();
@@ -254,7 +254,7 @@ function showUpdateModal(release, isAndroid) {
   const downloadUrl = apkAsset ? apkAsset.browser_download_url : release.html_url;
 
   activeUpdateModal = renderGlassModal({
-    icon: isAndroid ? "🚀" : "📱",
+    icon: isAndroid ? "🚀" : `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="#3DDC84"><path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4483-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993.0004.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5515 0 .9997.4482.9997.9993 0 .5511-.4482.9997-.9997.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 0 0-.1521-.5676.416.416 0 0 0-.5676.1521l-2.0222 3.503C15.5398 8.1633 13.8569 7.6896 12 7.6896c-1.8565 0-3.5398.4737-5.1368 1.261l-2.0222-3.503a.4158.4158 0 0 0-.5676-.1521.416.416 0 0 0-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3436-4.1021-2.6892-7.5743-6.1185-9.4396"/></svg>`,
     title: `Update Available: v${release.tag_name.replace(/^v/, "")}`,
     subtitle: "Release Notes",
     versionInfo: { current: CURRENT_VERSION, latest: release.tag_name },
@@ -468,7 +468,7 @@ function renderGlassModal({ icon, title, subtitle, versionInfo, contentHtml, act
 
 function showAndroidPromotion() {
   renderGlassModal({
-    icon: "📱",
+    icon: `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="#3DDC84"><path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4483-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993.0004.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5515 0 .9997.4482.9997.9993 0 .5511-.4482.9997-.9997.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 0 0-.1521-.5676.416.416 0 0 0-.5676.1521l-2.0222 3.503C15.5398 8.1633 13.8569 7.6896 12 7.6896c-1.8565 0-3.5398.4737-5.1368 1.261l-2.0222-3.503a.4158.4158 0 0 0-.5676-.1521.416.416 0 0 0-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3436-4.1021-2.6892-7.5743-6.1185-9.4396"/></svg>`,
     title: "Get the Android App",
     subtitle: "Benefits",
     contentHtml: `
