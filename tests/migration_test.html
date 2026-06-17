@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <title>DB Migration Test</title>
+</head>
+<body>
+  <h1>DB Migration Tests (v2 -> v3)</h1>
+  <div id="results"></div>
+  <script type="module">
+    import { openDatabase, getReadings, deleteReading, getTombstones } from "../web/src/db.js";
+
+    async function log(msg) {
+      const p = document.createElement("p");
+      p.textContent = msg;
+      document.getElementById("results").appendChild(p);
+      console.log(msg);
+    }
+
+    async function runTests() {
+      try {
+        await log("Opening database (triggering migration if v2)...");
+        const db = await openDatabase();
+        await log("Database opened successfully. DB Version: " + db.version);
+        
+        const readings = await getReadings(db);
+        await log("Existing readings count: " + readings.length);
+
+        if (db.objectStoreNames.contains("tombstones")) {
+            await log("SUCCESS: tombstones store exists!");
+            const t = await getTombstones(db);
+            await log("Existing tombstones: " + t.length);
+        } else {
+            await log("FAIL: tombstones store is missing.");
+        }
+      } catch (err) {
+        await log("Error: " + err.message);
+      }
+    }
+
+    runTests();
+  </script>
+</body>
+</html>
