@@ -229,7 +229,7 @@ export function setupDrivePrototype(els) {
   if (mgmtDeleteCloudBtn) {
     mgmtDeleteCloudBtn.addEventListener("click", () => {
       showDangerConfirm("Delete Cloud Data", "Are you sure you want to delete your cloud data? This cannot be undone.", "Proceed", () => {
-        showDangerConfirm("Final Warning", "This will permanently delete your cloud copy stored in Google Drive.\\n\\nYour local readings, settings, and backups will NOT be deleted.", "Permanently Delete", async () => {
+        showDangerConfirm("Final Warning", "This will permanently delete your cloud copy stored in Google Drive.\n\nYour local readings, settings, and backups will NOT be deleted.", "Permanently Delete", async () => {
           setStatus("Deleting...");
           try {
             await deleteFromDriveAppData("test.json");
@@ -267,7 +267,7 @@ export function setupDrivePrototype(els) {
 
 // Drive REST API Helpers
 async function getFileId(filename) {
-  const url = \`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='\${filename}'&fields=files(id,name)\`;
+  const url = `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${filename}'&fields=files(id,name)`;
   const res = await fetch(url, {
     headers: { Authorization: "Bearer " + driveAccessToken }
   });
@@ -288,15 +288,15 @@ async function uploadToDriveAppData(filename, content) {
   };
 
   const boundary = "-------314159265358979323846";
-  const delimiter = "\\r\\n--" + boundary + "\\r\\n";
-  const close_delim = "\\r\\n--" + boundary + "--";
+  const delimiter = "\r\n--" + boundary + "\r\n";
+  const close_delim = "\r\n--" + boundary + "--";
 
   let multipartRequestBody =
     delimiter +
-    "Content-Type: application/json\\r\\n\\r\\n" +
+    "Content-Type: application/json\r\n\r\n" +
     JSON.stringify(metadata) +
     delimiter +
-    "Content-Type: application/json\\r\\n\\r\\n" +
+    "Content-Type: application/json\r\n\r\n" +
     content +
     close_delim;
 
@@ -304,7 +304,7 @@ async function uploadToDriveAppData(filename, content) {
   let method = "POST";
   
   if (existingId) {
-    url = \`https://www.googleapis.com/upload/drive/v3/files/\${existingId}?uploadType=multipart\`;
+    url = `https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=multipart`;
     method = "PATCH";
   }
 
@@ -326,7 +326,7 @@ async function downloadFromDriveAppData(filename) {
   const fileId = await getFileId(filename);
   if (!fileId) return null;
 
-  const url = \`https://www.googleapis.com/drive/v3/files/\${fileId}?alt=media\`;
+  const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
   const res = await fetch(url, {
     headers: { Authorization: "Bearer " + driveAccessToken }
   });
@@ -339,7 +339,7 @@ async function deleteFromDriveAppData(filename) {
   const fileId = await getFileId(filename);
   if (!fileId) return;
 
-  const url = \`https://www.googleapis.com/drive/v3/files/\${fileId}\`;
+  const url = `https://www.googleapis.com/drive/v3/files/${fileId}`;
   const res = await fetch(url, {
     method: "DELETE",
     headers: { Authorization: "Bearer " + driveAccessToken }
