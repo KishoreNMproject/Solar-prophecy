@@ -118,7 +118,7 @@ async function init() {
   els.swipeGestureEnabled.checked = settings.swipeNavEnabled;
 
   bindEvents();
-  setupDrivePrototype(els);
+  setupDrivePrototype(els, db);
   await refresh();
   if (window.SolarAndroid) {
     checkForUpdates();
