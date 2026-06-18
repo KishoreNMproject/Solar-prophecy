@@ -119,6 +119,13 @@ export function setupDrivePrototype(els, db) {
 
     } catch (err) {
       console.error(err);
+      if (err.message && err.message.includes("[401]")) {
+        setStatus("Refreshing Session...");
+        if (window.SolarAndroid && window.SolarAndroid.silentSignInGoogle) {
+          window.SolarAndroid.silentSignInGoogle();
+        }
+        return;
+      }
       setStatus("Error", true);
       document.getElementById("diagApiErr").textContent = err.message;
     }
@@ -418,7 +425,7 @@ async function getFileId(filename) {
   const res = await fetch(url, {
     headers: { Authorization: "Bearer " + driveAccessToken }
   });
-  if (!res.ok) throw new Error("Search failed: " + res.statusText);
+  if (!res.ok) throw new Error("Search failed: [" + res.status + "] " + res.statusText);
   const data = await res.json();
   if (data.files && data.files.length > 0) {
     return { id: data.files[0].id, modifiedTime: new Date(data.files[0].modifiedTime).getTime() };
@@ -465,7 +472,7 @@ async function uploadToDriveAppData(filename, content) {
     body: multipartRequestBody
   });
 
-  if (!res.ok) throw new Error("Upload failed: " + res.statusText);
+  if (!res.ok) throw new Error("Upload failed: [" + res.status + "] " + res.statusText);
   const data = await res.json();
   return data.id;
 }
@@ -480,7 +487,7 @@ async function downloadFromDriveAppData(filename) {
     headers: { Authorization: "Bearer " + driveAccessToken }
   });
 
-  if (!res.ok) throw new Error("Download failed: " + res.statusText);
+  if (!res.ok) throw new Error("Download failed: [" + res.status + "] " + res.statusText);
   return await res.text();
 }
 
@@ -495,5 +502,5 @@ async function deleteFromDriveAppData(filename) {
     headers: { Authorization: "Bearer " + driveAccessToken }
   });
 
-  if (!res.ok) throw new Error("Delete failed: " + res.statusText);
+  if (!res.ok) throw new Error("Delete failed: [" + res.status + "] " + res.statusText);
 }
