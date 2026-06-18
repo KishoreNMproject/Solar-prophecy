@@ -65,7 +65,7 @@ export function setupDrivePrototype(els, db) {
     
     try {
       const fileInfo = await getFileId(CLOUD_FILENAME);
-      const cloudModified = fileInfo ? fileInfo.modifiedTime : 0;
+      const cloudModified = fileInfo && fileInfo.modifiedTime ? new Date(fileInfo.modifiedTime).getTime() : 0;
       
       const lastSyncStr = localStorage.getItem("lastSyncTime");
       const lastSyncTime = lastSyncStr ? parseInt(lastSyncStr, 10) : 0;

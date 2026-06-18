@@ -190,12 +190,16 @@ export async function importBackup(db, backup) {
   if (backup.validations && Array.isArray(backup.validations) && db.objectStoreNames.contains(VALIDATIONS_STORE)) {
     const valTx = db.transaction(VALIDATIONS_STORE, "readwrite");
     const valStore = valTx.objectStore(VALIDATIONS_STORE);
-    await txRequest(valStore.clear());
+    valStore.clear();
     for (const val of backup.validations) {
       if (val.date) {
         valStore.put(val);
       }
     }
+    await new Promise((resolve, reject) => {
+      valTx.oncomplete = resolve;
+      valTx.onerror = () => reject(valTx.error);
+    });
   }
 }
 
