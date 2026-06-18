@@ -94,6 +94,7 @@ export function setupDrivePrototype(els, db) {
         if (cloudDataStr) {
           const cloudBackup = JSON.parse(cloudDataStr);
           await mergeBackup(db, cloudBackup); // Use merge to safely apply
+          merged = true; // Set to true so UI refreshes!
         }
       } else if (!cloudNewer && localNewer) {
         // Only Local changed -> Upload to Cloud
