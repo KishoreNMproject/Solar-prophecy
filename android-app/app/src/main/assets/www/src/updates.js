@@ -1,4 +1,4 @@
-export let CURRENT_VERSION = "2.0.13"; // Fallback for web
+export let CURRENT_VERSION = "2.0.14"; // Fallback for web
 try {
   if (window.SolarAndroid && window.SolarAndroid.getAppVersion) {
     const androidVer = window.SolarAndroid.getAppVersion();
@@ -434,18 +434,20 @@ function renderGlassModal({ icon, title, subtitle, versionInfo, contentHtml, act
   }
 
   overlay.innerHTML = `
-    <div class="glass-modal">
-      <div class="update-header">
-        <span class="update-icon">${icon}</span>
-        <h2 class="update-title">${title}</h2>
-        ${headerAction ? `<button id="headerActionBtn" class="glass-button" style="margin-left: auto; padding: 4px 8px; font-size: 0.85rem; color: var(--brand); font-weight: bold;">${headerAction.label}</button>` : ""}
+    <div class="glass-modal" style="display: flex; flex-direction: column; overflow: hidden; padding: 0;">
+      <div style="padding: 24px 24px 0 24px; flex-shrink: 0;">
+        <div class="update-header">
+          <span class="update-icon">${icon}</span>
+          <h2 class="update-title">${title}</h2>
+          ${headerAction ? `<button id="headerActionBtn" class="glass-button" style="margin-left: auto; padding: 4px 8px; font-size: 0.85rem; color: var(--brand); font-weight: bold;">${headerAction.label}</button>` : ""}
+        </div>
+        ${versionInfoHtml}
       </div>
-      ${versionInfoHtml}
-      <div class="changelog">
-        <h3>${subtitle}</h3>
+      <div class="changelog" style="overflow-y: auto; padding: 0 24px; margin-bottom: 8px;">
+        <h3 style="margin-top: 16px;">${subtitle}</h3>
         ${contentHtml}
       </div>
-      <div class="modal-actions">
+      <div class="modal-actions" style="padding: 16px 24px 24px 24px; flex-shrink: 0; margin-top: 0; border-top: 1px solid var(--line);">
         ${actions.map((action, i) => `
           <button class="${action.primary ? "primary" : "glass-button"}" id="modalAction${i}">
             ${action.label}
