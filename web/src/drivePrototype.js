@@ -155,7 +155,7 @@ export function setupDrivePrototype(els, db) {
     }
     
     if (navProfileName) navProfileName.textContent = googleName || googleEmail;
-    if (navProfileStatus) navProfileStatus.textContent = "Signed in with Google \\u2714\\ufe0f";
+    if (navProfileStatus) navProfileStatus.textContent = "Signed in with Google \u2714\ufe0f";
     
     if (syncMgmtSignedOut) syncMgmtSignedOut.style.display = "none";
     if (syncMgmtSignedIn) syncMgmtSignedIn.style.display = "flex";

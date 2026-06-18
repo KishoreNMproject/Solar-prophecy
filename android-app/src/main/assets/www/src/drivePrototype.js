@@ -1,5 +1,5 @@
 import { showDialog, showConfirm, showDangerConfirm, showAlert } from "./dialog.js";
-import { getSyncMetadata, saveSyncMetadata, exportBackup, importBackup, mergeBackup } from "./db.js";
+import { getSyncMetadata, saveSyncMetadata, exportBackup, importBackup, mergeBackup, getTombstones } from "./db.js";
 
 // Cloud Sync V2 Alpha - Drive AppData Prototype
 let driveAccessToken = null;
@@ -22,12 +22,22 @@ export function setupDrivePrototype(els, db) {
   const mgmtLastSync = document.getElementById("mgmtLastSync");
   const prototypeUploadTest = document.getElementById("prototypeUploadTest");
   const prototypeDownloadTest = document.getElementById("prototypeDownloadTest");
+  const prototypeSyncNow = document.getElementById("prototypeSyncNow");
+  const syncMgmtOnboarding = document.getElementById("syncMgmtOnboarding");
+  const syncMgmtUnified = document.getElementById("syncMgmtUnified");
   const mgmtLogOutBtn = document.getElementById("mgmtLogOutBtn");
   const mgmtDeleteCloudBtn = document.getElementById("mgmtDeleteCloudBtn");
   const mgmtDeleteAccountBtn = document.getElementById("mgmtDeleteAccountBtn");
   
   const diagSubjectId = document.getElementById("diagSubjectId");
-  const diagFileId = document.getElementById("diagFileId");
+  const diagActiveFileId = document.getElementById("diagActiveFileId");
+  const diagTombstoneCount = document.getElementById("diagTombstoneCount");
+  const diagLastTombstone = document.getElementById("diagLastTombstone");
+  const diagLastMerge = document.getElementById("diagLastMerge");
+  const diagLastConflict = document.getElementById("diagLastConflict");
+  const diagLastLocalModified = document.getElementById("diagLastLocalModified");
+  const diagLastSuccessfulSync = document.getElementById("diagLastSuccessfulSync");
+  const diagOnboardingCompleted = document.getElementById("diagOnboardingCompleted");
 
   // Alpha hidden diagnostics panel toggling
   let versionTaps = 0;
@@ -130,17 +140,62 @@ export function setupDrivePrototype(els, db) {
   }
 
 
-  async function updateDiagPanel() {
-    const diagOnboardingCompleted = document.getElementById("diagOnboardingCompleted");
-    const diagOnboardingChoice = document.getElementById("diagOnboardingChoice");
+  async function updateUI() {
+    if (!driveAccessToken) {
+      if (navProfileArea) navProfileArea.style.display = "none";
+      if (syncMgmtSignedOut) syncMgmtSignedOut.style.display = "flex";
+      if (syncMgmtSignedIn) syncMgmtSignedIn.style.display = "none";
+      return;
+    }
+    
+    if (navProfileArea) navProfileArea.style.display = "flex";
+    if (navProfileAvatar && googleEmail) {
+      navProfileAvatar.textContent = googleEmail.substring(0, 1).toUpperCase();
+      navProfileAvatar.style.display = "flex";
+    }
+    
+    if (navProfileName) navProfileName.textContent = googleName || googleEmail;
+    if (navProfileStatus) navProfileStatus.textContent = "Signed in with Google \u2714\ufe0f";
+    
+    if (syncMgmtSignedOut) syncMgmtSignedOut.style.display = "none";
+    if (syncMgmtSignedIn) syncMgmtSignedIn.style.display = "flex";
+    
+    const lastSyncStr = localStorage.getItem("lastSyncTime");
+    if (lastSyncStr && mgmtLastSync) {
+      mgmtLastSync.textContent = new Date(parseInt(lastSyncStr, 10)).toLocaleTimeString();
+    }
+    
     const meta = await getSyncMetadata(db);
-    if (diagOnboardingCompleted) diagOnboardingCompleted.textContent = meta.onboardingCompleted;
-    if (diagOnboardingChoice) diagOnboardingChoice.textContent = meta.onboardingChoice || "N/A";
+    if (meta.onboardingCompleted) {
+      if (syncMgmtOnboarding) syncMgmtOnboarding.style.display = "none";
+      if (syncMgmtUnified) syncMgmtUnified.style.display = "flex";
+    } else {
+      if (syncMgmtOnboarding) syncMgmtOnboarding.style.display = "flex";
+      if (syncMgmtUnified) syncMgmtUnified.style.display = "none";
+    }
+    
+    // Diagnostics
+    if (diagSubjectId) diagSubjectId.textContent = googleSubjectId || "N/A";
+    if (diagOnboardingCompleted) diagOnboardingCompleted.textContent = meta.onboardingCompleted ? "true" : "false";
+    
+    const localModStr = localStorage.getItem("localLastModified");
+    if (diagLastLocalModified) diagLastLocalModified.textContent = localModStr ? new Date(parseInt(localModStr, 10)).toISOString() : "N/A";
+    if (diagLastSuccessfulSync) diagLastSuccessfulSync.textContent = lastSyncStr ? new Date(parseInt(lastSyncStr, 10)).toISOString() : "N/A";
+    
+    try {
+      const tombstones = await getTombstones(db);
+      if (diagTombstoneCount) diagTombstoneCount.textContent = tombstones.length.toString();
+      if (diagLastTombstone) {
+        if (tombstones.length > 0) {
+          const sorted = [...tombstones].sort((a,b) => b.deletedAt - a.deletedAt);
+          diagLastTombstone.textContent = new Date(sorted[0].deletedAt).toISOString();
+        } else {
+          diagLastTombstone.textContent = "N/A";
+        }
+      }
+    } catch(e) {}
   }
   
-  // Call initially
-  updateDiagPanel();
-
   const renderSignedOut = () => {
     driveAccessToken = null;
     googleSubjectId = null;
@@ -151,29 +206,14 @@ export function setupDrivePrototype(els, db) {
     if (navProfileAvatar) navProfileAvatar.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="var(--ink)"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
     if (navProfileName) navProfileName.textContent = "Sign In";
     if (navProfileStatus) navProfileStatus.textContent = "Optional Cloud Sync";
-
+    
     if (syncMgmtSignedOut) syncMgmtSignedOut.style.display = "flex";
     if (syncMgmtSignedIn) syncMgmtSignedIn.style.display = "none";
     if (diagSubjectId) diagSubjectId.textContent = "N/A";
   };
 
   const renderSignedIn = (name, email, photoUrl) => {
-    if (navProfileAvatar) {
-      if (photoUrl && photoUrl.trim() !== "") {
-        navProfileAvatar.innerHTML = `<img src="${photoUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">`;
-      } else if (name && name.trim() !== "") {
-        const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-        navProfileAvatar.innerHTML = `<div style="font-size: 1.2rem;">${initials}</div>`;
-      } else {
-        navProfileAvatar.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="var(--ink)"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
-      }
-    }
-    
-    if (navProfileName) navProfileName.textContent = name || email;
-    if (navProfileStatus) navProfileStatus.textContent = "Signed in with Google \u2714\ufe0f";
-    
-    if (syncMgmtSignedOut) syncMgmtSignedOut.style.display = "none";
-    if (syncMgmtSignedIn) syncMgmtSignedIn.style.display = "flex";
+    updateUI();
   };
 
   // Listen for native OAuth callbacks
@@ -205,7 +245,7 @@ export function setupDrivePrototype(els, db) {
                 localStorage.setItem("lastSyncTime", Date.now().toString());
                 setStatus("Synced \u2714\ufe0f");
                 startSyncTimer();
-                updateDiagPanel();
+                updateUI();
               }
             },
             { 
@@ -222,7 +262,7 @@ export function setupDrivePrototype(els, db) {
                 localStorage.setItem("lastSyncTime", Date.now().toString());
                 setStatus("Synced \u2714\ufe0f");
                 startSyncTimer();
-                updateDiagPanel();
+                updateUI();
                 if (window.refresh) await window.refresh();
               }
             },
@@ -310,6 +350,13 @@ export function setupDrivePrototype(els, db) {
     }
   };
 
+  if (prototypeSyncNow) {
+    prototypeSyncNow.addEventListener('click', async () => {
+      await doEcoSync(true);
+      await updateUI();
+    });
+  }
+
   if (prototypeUploadTest) {
     prototypeUploadTest.addEventListener('click', async () => {
       if (!driveAccessToken) return;
@@ -319,9 +366,15 @@ export function setupDrivePrototype(els, db) {
         const fileId = await uploadToDriveAppData(CLOUD_FILENAME, JSON.stringify(backup));
         const now = Date.now().toString();
         localStorage.setItem("lastSyncTime", now);
+        
+        const meta = await getSyncMetadata(db);
+        meta.onboardingCompleted = true;
+        meta.onboardingChoice = "upload";
+        await saveSyncMetadata(db, meta);
+        
         setStatus("Synced \u2714\ufe0f");
-        if (mgmtLastSync) mgmtLastSync.textContent = new Date().toLocaleTimeString();
-        if (diagFileId) diagFileId.textContent = fileId;
+        if (diagActiveFileId) diagActiveFileId.textContent = fileId;
+        await updateUI();
       } catch (err) {
         setStatus("Error", true);
         const errSpan = document.getElementById("diagApiErr");
@@ -341,9 +394,15 @@ export function setupDrivePrototype(els, db) {
           await importBackup(db, cloudBackup); // Overwrite local with cloud using importBackup
           const now = Date.now().toString();
           localStorage.setItem("lastSyncTime", now);
+          
+          const meta = await getSyncMetadata(db);
+          meta.onboardingCompleted = true;
+          meta.onboardingChoice = "download";
+          await saveSyncMetadata(db, meta);
+          
           setStatus("Synced \u2714\ufe0f");
-          if (mgmtLastSync) mgmtLastSync.textContent = new Date().toLocaleTimeString();
           if (window.refresh) await window.refresh();
+          await updateUI();
         } else {
           setStatus("No Cloud Data", true);
         }

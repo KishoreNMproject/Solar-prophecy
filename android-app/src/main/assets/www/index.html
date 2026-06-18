@@ -355,9 +355,13 @@
                 <span id="mgmtLastSync" style="font-weight: bold; font-size: 0.9rem; color: var(--ink);">Never</span>
               </div>
               
-              <div id="prototypeSyncControls" style="display: flex; width: 100%; gap: 8px; flex-direction: row; margin-top: 8px;">
-                <button class="secondary" id="prototypeUploadTest" type="button" style="flex: 1;">Sync Local to Cloud</button>
-                <button class="secondary" id="prototypeDownloadTest" type="button" style="flex: 1;">Sync Cloud to Local</button>
+              <div id="syncMgmtOnboarding" style="display: flex; width: 100%; gap: 8px; flex-direction: row; margin-top: 8px;">
+                <button class="secondary" id="prototypeUploadTest" type="button" style="flex: 1;">Upload Local Data to Cloud</button>
+                <button class="secondary" id="prototypeDownloadTest" type="button" style="flex: 1;">Download Cloud Data to Device</button>
+              </div>
+
+              <div id="syncMgmtUnified" style="display: none; width: 100%; margin-top: 8px;">
+                <button class="secondary" id="prototypeSyncNow" type="button" style="width: 100%;">Sync Now</button>
               </div>
 
               <div style="width: 100%; border-top: 1px solid var(--glass); margin-top: 8px; padding-top: 16px; display: flex; flex-direction: column; gap: 8px;">
@@ -368,17 +372,29 @@
             </div>
           </div>
 
+          <div class="settings-form" style="margin-top: 16px;">
+            <div class="section-label">Legal Information</div>
+            <div class="settings-row" style="flex-direction: column; gap: 8px;">
+              <button class="secondary" id="settingsPrivacyBtn" type="button" style="width: 100%;">Privacy Policy</button>
+              <button class="secondary" id="settingsTermsBtn" type="button" style="width: 100%;">Terms of Service</button>
+            </div>
+          </div>
+
           <div class="settings-form" id="diagnosticsPanel" style="display: none; margin-top: 16px;">
             <div class="section-label">Diagnostics (Alpha)</div>
             <div class="settings-row" style="flex-direction: column; align-items: flex-start; gap: 4px; font-family: monospace; font-size: 0.75rem; color: var(--muted);">
               <div><strong>Google Subject ID:</strong> <span id="diagSubjectId">N/A</span></div>
-              <div><strong>Active Drive File ID:</strong> <span id="diagFileId">N/A</span></div>
-              <div><strong>Sync Queue State:</strong> <span id="diagQueue">Empty</span></div>
-              <div><strong>Last Sync Time:</strong> <span id="diagSyncTime">Never</span></div>
+              <div><strong>Active Drive File ID:</strong> <span id="diagActiveFileId">N/A</span></div>
+              <div><strong>Tombstone Count:</strong> <span id="diagTombstoneCount">0</span></div>
+              <div><strong>Last Tombstone Created:</strong> <span id="diagLastTombstone">N/A</span></div>
+              <div><strong>Last Merge Operation:</strong> <span id="diagLastMerge">N/A</span></div>
+              <div><strong>Last Conflict Resolution:</strong> <span id="diagLastConflict">N/A</span></div>
+              <div><strong>Last Local Modified:</strong> <span id="diagLastLocalModified">N/A</span></div>
+              <div><strong>Last Successful Sync:</strong> <span id="diagLastSuccessfulSync">N/A</span></div>
               <div><strong>Last API Error:</strong> <span id="diagApiErr">None</span></div>
               <div><strong>OAuth Scope List:</strong> <span id="diagScope">drive.appdata</span></div>
               <div><strong>Authentication Provider:</strong> Google</div>
-              <div><strong>App Version:</strong> <span id="diagAppVersion">v2.0.8</span></div>
+              <div><strong>App Version:</strong> <span id="diagAppVersion">v2.0.9</span></div>
               <div><strong>Build Channel:</strong> Alpha</div>
               <div><strong>Feature Flags:</strong> <span id="diagFlags">ENABLE_CLOUD_SYNC=true, ENABLE_HOUSEHOLD_SYNC=false</span></div>
               <div><strong>Onboarding Completed:</strong> <span id="diagOnboardingCompleted">false</span></div>
@@ -416,6 +432,32 @@
             <button class="primary" type="submit">Save Changes</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <div id="legalModalOverlay" class="modal-overlay" style="display: none; z-index: 1100;">
+      <div class="glass-modal" style="width: 90%; max-width: 600px; padding: 24px; max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <h2 id="legalModalTitle" style="margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--brand);">Legal</h2>
+          <button id="closeLegalModal" style="background: transparent; border: none; color: var(--muted); font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 0; margin-top: -4px;">&times;</button>
+        </div>
+        <div id="legalModalContent" style="font-size: 0.9rem; color: var(--ink); line-height: 1.6; white-space: pre-wrap; flex: 1; overflow-y: auto; margin-bottom: 16px;"></div>
+        <button id="closeLegalModalBottom" class="secondary" style="width: 100%;">Close</button>
+      </div>
+    </div>
+
+    <div id="consentModalOverlay" class="modal-overlay" style="display: none; z-index: 1000; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); background: rgba(0,0,0,0.6);">
+      <div class="glass-modal" style="width: 90%; max-width: 400px; padding: 24px; text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 16px;">☀️</div>
+        <h2 style="margin: 0 0 12px 0; font-size: 1.4rem; font-weight: 800; color: var(--brand);">Welcome to Solar Prophecy</h2>
+        <p style="font-size: 0.95rem; color: var(--ink); line-height: 1.5; margin-bottom: 24px;">
+          To use the app, please review and accept our terms and privacy policy.
+        </p>
+        <div style="font-size: 0.85rem; color: var(--muted); margin-bottom: 24px; display: flex; flex-direction: column; gap: 8px;">
+          <a href="#" id="onboardingTermsLink" style="color: var(--brand); text-decoration: underline;">Terms of Service</a>
+          <a href="#" id="onboardingPrivacyLink" style="color: var(--brand); text-decoration: underline;">Privacy Policy</a>
+        </div>
+        <button id="acceptConsentBtn" class="primary" style="width: 100%; font-size: 1.1rem; padding: 12px;">Accept and Continue</button>
       </div>
     </div>
 

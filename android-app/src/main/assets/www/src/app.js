@@ -16,6 +16,7 @@ import {
   saveValidation
 } from "./db.js";
 import { setupDrivePrototype } from "./drivePrototype.js";
+import { privacyPolicyText, termsOfServiceText, showLegalModal, initLegalModals } from "./legal.js";
 
 let db;
 let readings = [];
@@ -81,6 +82,8 @@ const els = {
   closeNav: document.getElementById('closeNav'),
   navCheckUpdates: document.getElementById('navCheckUpdates'),
   navAbout: document.getElementById('navAbout'),
+  settingsPrivacyBtn: document.getElementById('settingsPrivacyBtn'),
+  settingsTermsBtn: document.getElementById('settingsTermsBtn'),
   navSupport: document.getElementById('navSupport'),
   topbar: document.querySelector('.topbar'),
   rateDisplay: document.getElementById('rateDisplay'),
@@ -119,6 +122,7 @@ async function init() {
   els.swipeGestureEnabled.checked = settings.swipeNavEnabled;
 
   bindEvents();
+  initLegalModals();
   setupDrivePrototype(els, db);
   await refresh();
   if (window.SolarAndroid) {
@@ -247,6 +251,14 @@ function bindEvents() {
   els.navAbout.addEventListener("click", () => {
     closeMenu();
     showAboutModal();
+  });
+
+  els.settingsPrivacyBtn.addEventListener("click", () => {
+    showLegalModal("Privacy Policy", privacyPolicyText);
+  });
+
+  els.settingsTermsBtn.addEventListener("click", () => {
+    showLegalModal("Terms of Service", termsOfServiceText);
   });
 
   els.navSupport.addEventListener("click", () => {

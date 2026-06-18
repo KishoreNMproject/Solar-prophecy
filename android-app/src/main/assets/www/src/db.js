@@ -1,8 +1,9 @@
 const DB_NAME = "solar-prophecy";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const READING_STORE = "readings";
 const SETTINGS_STORE = "settings";
 const VALIDATIONS_STORE = "validations";
+const TOMBSTONES_STORE = "tombstones";
 
 function markLocalModified() {
   localStorage.setItem("localLastModified", Date.now().toString());
@@ -22,6 +23,9 @@ export async function openDatabase() {
       }
       if (!db.objectStoreNames.contains(VALIDATIONS_STORE)) {
         db.createObjectStore(VALIDATIONS_STORE, { keyPath: "date" });
+      }
+      if (!db.objectStoreNames.contains(TOMBSTONES_STORE)) {
+        db.createObjectStore(TOMBSTONES_STORE, { keyPath: "id" });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -64,8 +68,20 @@ export async function saveReading(db, reading) {
 }
 
 export async function deleteReading(db, id) {
+  await markTombstone(db, id);
   await txRequest(db.transaction(READING_STORE, "readwrite").objectStore(READING_STORE).delete(id));
   markLocalModified();
+}
+
+export async function markTombstone(db, id) {
+  const store = db.transaction(TOMBSTONES_STORE, "readwrite").objectStore(TOMBSTONES_STORE);
+  await txRequest(store.put({ id, deletedAt: Date.now() }));
+  markLocalModified();
+}
+
+export async function getTombstones(db) {
+  if (!db.objectStoreNames.contains(TOMBSTONES_STORE)) return [];
+  return txRequest(db.transaction(TOMBSTONES_STORE).objectStore(TOMBSTONES_STORE).getAll());
 }
 
 export async function getSettings(db) {
@@ -94,11 +110,12 @@ export async function saveValidation(db, record) {
 
 export async function exportBackup(db) {
   return {
-    schema: "solar-prophecy.backup.v2",
+    schema: "solar-prophecy.backup.v3",
     exportedAt: new Date().toISOString(),
     readings: await getReadings(db),
     settings: await getSettings(db),
-    validations: Object.values(await getValidations(db))
+    validations: Object.values(await getValidations(db)),
+    tombstones: await getTombstones(db)
   };
 }
 
@@ -111,6 +128,17 @@ export async function importBackup(db, backup) {
   const readTx = db.transaction(READING_STORE, "readwrite");
   const readStore = readTx.objectStore(READING_STORE);
   await txRequest(readStore.clear());
+
+  if (db.objectStoreNames.contains(TOMBSTONES_STORE)) {
+    const tombTx = db.transaction(TOMBSTONES_STORE, "readwrite");
+    const tombStore = tombTx.objectStore(TOMBSTONES_STORE);
+    await txRequest(tombStore.clear());
+    if (backup.tombstones && Array.isArray(backup.tombstones)) {
+      for (const t of backup.tombstones) {
+        await txRequest(tombStore.put(t));
+      }
+    }
+  }
   
   // Validate and insert readings
   let lastValue = -1;
@@ -177,6 +205,24 @@ export async function mergeBackup(db, cloudBackup) {
   if (!cloudBackup || !Array.isArray(cloudBackup.readings)) throw new Error("Invalid backup format for merge");
 
   const localReadings = await getReadings(db);
+  const localTombstones = await getTombstones(db);
+  
+  // 1. Merge Tombstones (Keep the newest deletedAt for each ID)
+  const tombstoneMap = new Map();
+  if (cloudBackup.tombstones && Array.isArray(cloudBackup.tombstones)) {
+    for (const t of cloudBackup.tombstones) {
+      if (!t.id) continue;
+      tombstoneMap.set(t.id, t.deletedAt);
+    }
+  }
+  for (const t of localTombstones) {
+    if (!t.id) continue;
+    const existing = tombstoneMap.get(t.id);
+    if (!existing || t.deletedAt > existing) {
+      tombstoneMap.set(t.id, t.deletedAt);
+    }
+  }
+
   const readingMap = new Map();
 
   // Load cloud readings first
@@ -185,7 +231,7 @@ export async function mergeBackup(db, cloudBackup) {
     readingMap.set(r.id, r);
   }
 
-  // Override with local readings if they are newer
+  // Override with local readings if they are newer (or equal, prefer local)
   for (const r of localReadings) {
     if (!r.id) continue;
     const existing = readingMap.get(r.id);
@@ -194,8 +240,19 @@ export async function mergeBackup(db, cloudBackup) {
     } else {
       const localTime = new Date(r.updatedAt || r.timestamp).getTime();
       const cloudTime = new Date(existing.updatedAt || existing.timestamp).getTime();
-      if (localTime >= cloudTime) {
+      if (localTime >= cloudTime) { // Prefer local on equality
         readingMap.set(r.id, r);
+      }
+    }
+  }
+  
+  // Apply Tombstones to drop deleted readings
+  for (const [id, reading] of readingMap.entries()) {
+    const deletedAt = tombstoneMap.get(id);
+    if (deletedAt) {
+      const updatedAt = new Date(reading.updatedAt || reading.timestamp).getTime();
+      if (updatedAt <= deletedAt) {
+        readingMap.delete(id);
       }
     }
   }
@@ -220,12 +277,15 @@ export async function mergeBackup(db, cloudBackup) {
   }
   const mergedValidations = Array.from(mergedValidationsMap.values());
 
+  const mergedTombstones = Array.from(tombstoneMap.entries()).map(([id, deletedAt]) => ({ id, deletedAt }));
+
   const mergedBackup = {
-    schema: "solar-prophecy.backup.v2",
+    schema: "solar-prophecy.backup.v3",
     exportedAt: new Date().toISOString(),
     readings: mergedReadings,
     settings: mergedSettings,
-    validations: mergedValidations
+    validations: mergedValidations,
+    tombstones: mergedTombstones
   };
 
   await importBackup(db, mergedBackup);
