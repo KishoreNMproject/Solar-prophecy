@@ -124,11 +124,6 @@ export async function importBackup(db, backup) {
     throw new Error("Unsupported or invalid backup file.");
   }
 
-  // Clear existing readings and settings to ensure a clean restore state
-  const readTx = db.transaction(READING_STORE, "readwrite");
-  const readStore = readTx.objectStore(READING_STORE);
-  await txRequest(readStore.clear());
-
   if (db.objectStoreNames.contains(TOMBSTONES_STORE)) {
     const tombTx = db.transaction(TOMBSTONES_STORE, "readwrite");
     const tombStore = tombTx.objectStore(TOMBSTONES_STORE);
@@ -139,11 +134,16 @@ export async function importBackup(db, backup) {
       }
     }
   }
-  
+
   // Validate and insert readings
   let lastValue = -1;
   let currentEpoch = 0;
   const sortedReadings = [...backup.readings].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  // Clear existing readings and settings to ensure a clean restore state
+  const readTx = db.transaction(READING_STORE, "readwrite");
+  const readStore = readTx.objectStore(READING_STORE);
+  readStore.clear(); // Queue clear, no await
 
   for (const reading of sortedReadings) {
     if (!reading.timestamp || typeof reading.value !== "number") continue;
@@ -166,7 +166,7 @@ export async function importBackup(db, backup) {
         : Math.random().toString(36).slice(2) + Date.now().toString(36);
     }
     
-    readStore.put(reading);
+    readStore.put(reading); // Queue put, no await
   }
 
   // Wait for all readings to be committed
