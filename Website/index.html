@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Prophecy - Advanced Solar Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #f39c12;
+            --bg-dark: #121212;
+            --bg-card: #1e1e1e;
+            --text-main: #f5f6fa;
+            --text-muted: #a4b0be;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 80px 20px 40px;
+            max-width: 800px;
+            background: radial-gradient(circle at top, #2c2c2c 0%, var(--bg-dark) 70%);
+            width: 100%;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 28px;
+            border-radius: 30px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: #121212;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.6);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text-main);
+            border: 2px solid #555;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--text-main);
+            transform: translateY(-2px);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            padding: 40px 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .feature-card {
+            background-color: var(--bg-card);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-card h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .footer {
+            margin-top: 60px;
+            padding: 40px 20px;
+            text-align: center;
+            width: 100%;
+            border-top: 1px solid #333;
+            box-sizing: border-box;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        .copyright {
+            color: #777;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <section class="hero">
+        <h1>Solar Prophecy</h1>
+        <p>The privacy-first, offline-capable solar analytics dashboard. Track your generation, project future trends, and manage your data—all stored safely on your device.</p>
+        
+        <div class="cta-buttons">
+            <a href="https://github.com/KishoreNMproject/Solar-prophecy/releases/latest" target="_blank" class="btn btn-primary">Download Latest Android App</a>
+            <a href="https://github.com/KishoreNMproject/Solar-prophecy/releases" target="_blank" class="btn btn-secondary">View All Releases (Web & Android)</a>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="feature-card">
+            <h3>Local First</h3>
+            <p>Your data stays on your device. We respect your privacy and never upload your sensitive solar generation metrics to our servers.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Advanced Analytics</h3>
+            <p>Gain insights from daily closing records. View progress gauges, bar charts, and trends across daily, weekly, and monthly scopes.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Smart Forecasting</h3>
+            <p>Once enough baseline data is established, unlock predictive modeling to estimate your future generation milestones.</p>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="privacy_policy.html">Privacy Policy</a>
+            <a href="terms_of_service.html">Terms of Service</a>
+        </div>
+        <div class="copyright">
+            &copy; 2026 Solar Prophecy. All rights reserved.
+        </div>
+    </footer>
+
+</body>
+</html>
