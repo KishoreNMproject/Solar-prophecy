@@ -35,6 +35,11 @@ jobs:
           # Copy the 'app' folder into _site/app
           cp -r app _site/app
           
+          # Copy verification and SEO files to root
+          cp google15b716a04ca25265.html _site/ || true
+          cp sitemap.xml _site/ || true
+          cp robots.txt _site/ || true
+          
           # Redirect the root URL to the 'home' endpoint
           echo '<meta http-equiv="refresh" content="0; url=./home/" />' > _site/index.html
 
