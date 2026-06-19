@@ -1,0 +1,136 @@
+﻿d6ffe28 - 2026-06-05 - init
+fb136fb - 2026-06-05 - install date fix and export import added on mobile
+a17f265 - 2026-06-05 - ui fix
+5a7be79 - 2026-06-06 - regular apk release v1
+a64c591 - 2026-06-06 - intraday recording added
+bc7b6f4 - 2026-06-07 - fix(import): restore backup import functionality across web and android
+187f210 - 2026-06-07 - fix(ui + function): fixed import button and fixed ghosted imports and added toast notifications:
+4af67d1 - 2026-06-07 - fix(import button): ui fix enforced
+a4b3e29 - 2026-06-07 - docs: update GEMINI.md with recent accomplishments and project status
+12d6a4b - 2026-06-07 - fix(ui): improve scrolling performance and compact chart layout
+0bf75a3 - 2026-06-08 - feat: enhance chart readability and data context (v1.1.3)
+9082839 - 2026-06-08 - fix: restore chart visibility and add data context labels (v1.1.4)
+577b589 - 2026-06-08 - fix: dynamically hide legend entries for empty datasets (v1.1.5)
+5d3bda8 - 2026-06-08 - fix: refine UI, remove redundant text, and implement compact learning cards (v1.1.6)
+6810872 - 2026-06-08 - fix: optimize Readings section with scrollable container and sticky headers (v1.1.7)
+d71cf69 - 2026-06-08 - feat(prediction): add capacity-aware forecasting and solar performance analysis (v1.2.0)
+51a41ce - 2026-06-08 - fix: make installed capacity setting visible and editable post-configuration
+6f11bd2 - 2026-06-08 - fix: restore Installation Year visibility in settings summary
+53a9094 - 2026-06-08 - style: unify settings actions into a single glassmorphism Edit button
+df1a968 - 2026-06-08 - journal entry:8th June 2026
+1aef40a - 2026-06-09 - V1.2.2 fix(inverter reset): added procuder for inverter reset protocol
+5afbd8d - 2026-06-09 - V1.3.0 Feature(OTA UPDATES): Updates can be done now through OTA seamlessly
+14499a6 - 2026-06-09 - feat(ui): add version-aware What's New experience v1.3.1
+e403481 - 2026-06-09 - feat(ota): implement professional Android OTA update system
+6c41bda - 2026-06-09 - release: v1.3.2 with professional OTA update system
+070b53d - 2026-06-09 - feat(theme): add adaptive themes and dynamic solar sky experience v1.3.3
+ac9b948 - 2026-06-09 - test: verify commit signing
+2c1a1ad - 2026-06-09 - test: verify commit signing
+77d027f - 2026-06-09 - test: verify commit signing
+dcb0b73 - 2026-06-09 - fix(theme): stabilize adaptive theme system and UI responsiveness v1.3.4
+f16e5c5 - 2026-06-09 - fix(ota): resolve Android OTA installation failures v1.3.5
+e360ec1 - 2026-06-09 - fix(theme): ensure global propagation of theme colors v1.3.7
+22969e8 - 2026-06-09 - fix(ui): stabilize themes and improve OTA update experience v1.3.8
+c68266b - 2026-06-09 - Add GNU General Public License v3
+c38d845 - 2026-06-09 - fix(ui): implement Android nav bar sync, fix chart heights, refine light theme v1.3.9
+2425205 - 2026-06-09 - feat(ui): complete ui refinement, new light theme, and emoji celestial widget v1.3.10
+4d3cbf6 - 2026-06-09 - fix(ui): restore dashboard card styling and stabilize themes v1.3.11
+acd48e5 - 2026-06-09 - fix(ui): redesign model status card and optimize dashboard layout v1.3.12
+4a230ae - 2026-06-09 - Revert "fix(ui): redesign model status card and optimize dashboard layout v1.3.12"
+3b3eece - 2026-06-09 - fix(ui): refine model status card layout and bump version to v1.3.13
+2008309 - 2026-06-09 - journal entry
+0ffb44d - 2026-06-11 -  Solar Prophecy Analytics Architecture Update (v1.4.0)
+31bc7fe - 2026-06-11 - Ignore AGY agent files
+a2f06fb - 2026-06-11 -  v 1.4.1
+f72a091 - 2026-06-11 -  v 1.4.2
+edd85ac - 2026-06-11 -  v 1.5.01 - Application Navigation Restructure
+8cd5818 - 2026-06-11 -  v 1.5.02 - Remove Financial Insights completely
+6a82e33 - 2026-06-11 -  v 1.5.03 - UI Layout and Daily Generation History Fixes
+04434b9 - 2026-06-11 -  v 1.5.4 - Native Patch Notes and Stable Layout
+7d0800c - 2026-06-11 -  v 1.5.5 - UI Bug Fix: Custom Timestamp Checkbox
+3957ac5 - 2026-06-11 -  v 1.5.6 - Platform Specific Update Management
+27cd6d1 - 2026-06-11 -  v 1.5.7 - UX and Navigation Polish
+85d1a80 - 2026-06-11 -  v 1.5.8 - Native Dialog Overhaul
+71a8bb3 - 2026-06-11 -  v 1.5.9 - Update Checker Fix and Android 17 Root Cause Report
+0aebfee - 2026-06-11 - Fix forecast continuity and modern Android WebView compatibility
+d583f5a - 2026-06-11 - Add release notes for v1.5.10
+66ccf2b - 2026-06-11 - Fix Android 14+ SecurityException for BroadcastReceiver
+8fe0281 - 2026-06-11 - Add release notes for v1.5.11
+12183b8 - 2026-06-13 - fix(ui): ensure chart labels remain visible and do not clip
+b363663 - 2026-06-13 - fix(release): address user-facing regressions and release management issues
+54822a9 - 2026-06-13 - feat(ui): implement dual-color progress bar visualization for current day generation
+e4d6fe9 - 2026-06-13 - UI Enhancement (v1.6.1): Web Android App Discovery
+35b42f0 - 2026-06-13 - UI Alignment Fix: Centered Web Android App menu item
+3b5a64c - 2026-06-13 - UI Enhancement: Sticky Home Action
+240bb9a - 2026-06-13 - UI Enhancement (v1.6.2): Sticky Home Action
+3addae7 - 2026-06-13 - UI Fix (v1.6.3): Show Sticky Home on all secondary screens
+74aa883 - 2026-06-13 - Analytics (v1.6.4): Repair intraday composite live prediction
+7e107fd - 2026-06-15 -  feat: Forecast Validation Persistence Snapshot Architecture Chart UI Corrections
+3fa9bd3 - 2026-06-15 - Hotfix v1.7.1 Play Protect Remediation
+89d5065 - 2026-06-15 -  Hotfix v1.7.2: UI Correctness Updates
+9aaf904 - 2026-06-15 -  Hotfix v1.7.3: Service Worker Cache Correction
+5c4de02 - 2026-06-15 - feat: add service worker support and implement native OTA update management system
+7fe54fb - 2026-06-15 - Merge hotfix v1.7.4
+f230303 - 2026-06-15 - Fix: Add automatic cleanup of previous update packages v1.7.5
+1084a15 - 2026-06-15 - Fix(OTA): Refactor OTA UX and simplify update dialog (v1.7.6)
+628f130 - 2026-06-15 - v1.7.7-diag: Replace generic OTA handler with diagnostic logging
+3e88b2d - 2026-06-15 - Remove md files from tracking and ignore them
+2258cd9 - 2026-06-15 - Organize audit files into dedicated folder
+db35f35 - 2026-06-15 - Configure Gradle to output named APK automatically
+49f8217 - 2026-06-15 - UI: Implement Edit Reading pop-up modal
+2936a83 - 2026-06-15 - Fix: Correct asset directory & SW cache for Edit bug
+76809a9 - 2026-06-15 - Feat: Add swipe gesture navigation and modern toggle UI
+c16dbc4 - 2026-06-15 - Feat: Complete Android OTA Modernization architecture
+794ab4e - 2026-06-16 - UI Polish: Optimize monthly and forecast layout during learning phase
+d2d2af8 - 2026-06-16 - Fix: Add missing closing brace in app.js breaking UI
+9f77234 - 2026-06-16 - Fix: Support swipe-to-close gesture for navigation menu
+2c59f9b - 2026-06-16 - Feat: Update application icon to modern sun and leaf motif
+c7abd89 - 2026-06-16 - Fix: Resolve chart label overlaps and Forecast chart visibility leak
+6e1a1f8 - 2026-06-16 - UI Polish: Refactored chart labels to stack elegantly and eliminated text overflow
+7525c9a - 2026-06-16 - Fix: Trim leading zero values from Trend Analysis rolling average chart
+b3bc4d1 - 2026-06-16 - UI: Add numerical value labels directly underneath points on line charts
+d243c28 - 2026-06-16 - Feature: Support Solar Prophecy UI (QR and UPI payment)
+7b5f6d4 - 2026-06-16 - Fix: Enable native intent launching for UPI links in WebView
+fa096c2 - 2026-06-17 - UI: Bubble-style navigation menu and header cleanup
+d0e5ba8 - 2026-06-17 - UI: Bottom-docked Support button with center alignment
+ca04cc2 - 2026-06-17 - Chore: Restore README.md to git tracking
+9f0a64c - 2026-06-17 - UI: Add permanent colored background to Support button
+6232055 - 2026-06-17 - UI: Update Support button to vibrant amber color
+b721500 - 2026-06-17 - UI: Optimize modal layout for large screens and reduce inner scrolling
+d72f3e9 - 2026-06-17 - UI: Downsize navigation menu text for better readability
+25d5c6b - 2026-06-17 - Docs: Add Support Solar Prophecy details and QR code to README
+de3270f - 2026-06-17 - updated README.md
+78e49b3 - 2026-06-17 - UI: Rephrase UPI link to 'Support us via UPI'
+c50b255 - 2026-06-17 - UI: Replace generic smartphone emoji with official Android SVG logo
+4a07179 - 2026-06-17 - Fix Android theme background suspension and daylight timings
+60a7590 - 2026-06-17 - Fix Android theme background suspension and daylight timings
+716754f - 2026-06-17 - feat(oauth): add Google SignIn bridge for Android Webview
+f0c66bb - 2026-06-17 - feat(oauth): add Drive AppData sync prototype to Settings
+270b379 - 2026-06-17 - chore: sync web assets for Drive AppData prototype
+d03c2ca - 2026-06-17 - chore: bump version to 2.0.0 for Cloud Sync V2 OTA update
+3007253 - 2026-06-17 - v2.0.0-alpha: Session persistence, Side Menu Profile Redesign, First-Sync UX, and Cloud Sync Management
+4cffb9c - 2026-06-17 - v2.0.1: Fix versioning for OTA updater
+f73c24c - 2026-06-17 - v2.0.2: Fix JS syntax error breaking menu
+50a15d6 - 2026-06-17 - Fix: Implemented Eco-Friendly Cloud Sync with First-Sync Safety
+a8c6865 - 2026-06-17 - Fix: Ignore code 4 for fresh install silent sign-in; Feature: Immersive Mode in Android Wrapper
+bdff715 - 2026-06-17 - Fix: Immersive Mode API 35 enforcement and cache busting for Code 4 error
+802825e - 2026-06-17 - Fix: Web assets copied to correct www folder for Android wrapper; Bump to v2.0.6
+0b06755 - 2026-06-17 - Fix: Remove hardcoded cache busters and update service worker correctly; Bump to v2.0.7
+cae76f6 - 2026-06-17 - Fix: Remove stray syntax error in drivePrototype.js causing app crash; Bump to v2.0.8
+06d6b4c - 2026-06-17 - Fix: Corrupted emojis in sign in modal (mojibake) and fix drivePrototype.js syntax error causing app crash
+e5314d8 - 2026-06-17 - Fix: Connect manual sync buttons to real backup logic, attach global refresh hook, and fix all emoji encoding bugs
+38423ff - 2026-06-17 - chore: release v2.0.9 - unified sync and tombstone logic
+85fef25 - 2026-06-18 - feat: release v2.0.10 - Legal consent onboarding and Terms of Service
+68a6f15 - 2026-06-18 - addition of terms of service and privacy policy
+e9260a2 - 2026-06-18 - fix: resolve TransactionInactiveError during cloud sync and update UI on sync
+d327dc7 - 2026-06-18 - rename of privacy policy and terms of service file names for fixing page not found error:
+784f702 - 2026-06-18 - dashboard ui added
+c6846b0 - 2026-06-18 - Update Website landing page with dynamic APK download link
+5b4ee8b - 2026-06-18 - google verification file
+9728c01 - 2026-06-18 - chore: add sitemap.xml for Google Search Console
+dac595c - 2026-06-18 - chore: add robots.txt for Google Search Console
+829541d - 2026-06-18 - property ownership verification file added
+a67dbc1 - 2026-06-18 - chore: release v2.0.12 - zero-touch auto sync
+f99181f - 2026-06-18 - fix: parse ISO timestamp for correct eco-sync age comparison
+6ec90e8 - 2026-06-18 - ui: make update modal header and footer sticky
+63f3956 - 2026-06-18 - fix: auto-refresh expired Google OAuth token during sync
