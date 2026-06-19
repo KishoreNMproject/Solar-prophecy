@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://solarprophecy-home.netlify.app/sitemap.xml
