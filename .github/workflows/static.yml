@@ -1,58 +1,13 @@
-name: Deploy Multiple Sites to GitHub Pages
-
-on:
-  # Runs on pushes targeting the default branch
-  push:
-    branches: ["main"] # Update this if your default branch is 'master'
-  
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# Allow only one concurrent deployment
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
-jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
       - name: Prepare Deployment Directory
         run: |
           # Create a master folder to hold both sites
           mkdir _site
           
-          # Copy the 'Website' folder into _site/Website
-          cp -r Website _site/Website
+          # Copy the 'home' folder into _site/home
+          cp -r home _site/home
           
-          # Copy the 'web' folder into _site/web
-          cp -r web _site/web
+          # Copy the 'app' folder into _site/app
+          cp -r app _site/app
           
-          # Optional: Create a root index.html to redirect visitors to one of the sites
-          # If someone visits the base URL, it will redirect them to the 'Website' endpoint
-          echo '<meta http-equiv="refresh" content="0; url=./Website/" />' > _site/index.html
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-        
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          # We tell GitHub Pages to serve our newly created combined folder
-          path: './_site'
-          
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          # Redirect the root URL to the 'home' endpoint
+          echo '<meta http-equiv="refresh" content="0; url=./home/" />' > _site/index.html
